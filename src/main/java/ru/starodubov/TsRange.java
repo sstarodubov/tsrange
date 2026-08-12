@@ -32,12 +32,20 @@ public final class TsRange {
         return TsRange.of(LocalDateTime.parse(l), LocalDateTime.parse(u), DEFAULT_BOUNDS);
     }
 
-
-    public static TsRange of(LocalDateTime lower, LocalDateTime upper, String bounds) {
+    public static TsRange of(final LocalDateTime lower, final LocalDateTime upper, final boolean lowerInc, final boolean upperInc) {
         if (lower == null || upper == null) {
             throw new UnsupportedOperationException("null is not allowed. lower: %s, upper:%s"
                     .formatted(lower, upper));
         }
+
+        if (lower.isAfter(upper)) {
+            throw new UnsupportedOperationException("lower must be before or equal upper");
+        }
+
+        return new TsRange(lower, upper, lowerInc, upperInc);
+    }
+
+    public static TsRange of(LocalDateTime lower, LocalDateTime upper, String bounds) {
         if (bounds == null || bounds.length() != 2) {
             throw new UnsupportedOperationException("unknown bounds expression");
         }
@@ -54,11 +62,7 @@ public final class TsRange {
             default -> throw new UnsupportedOperationException("unknown bound: %s".formatted(bounds.charAt(1)));
         };
 
-        if (lower.isAfter(upper)) {
-            throw new UnsupportedOperationException("lower must be before upper");
-        }
-
-        return new TsRange(lower, upper, lowerInc, upperInc);
+        return TsRange.of(lower, upper, lowerInc, upperInc);
     }
 
     public static TsRange of(LocalDateTime lower, LocalDateTime upper) {
@@ -161,25 +165,25 @@ public final class TsRange {
         if (lessThan(range)) {
             final int cmp = comparePoints(upper, range.upper());
             if (cmp == 0) {
-                return new TsRange(lower, upper, lowerInc, upperInc || range.upperInc());
+                return TsRange.of(lower, upper, lowerInc, upperInc || range.upperInc());
             }
             if (cmp < 0) {
-                return new TsRange(lower, range.upper(), lowerInc, range.upperInc());
+                return TsRange.of(lower, range.upper(), lowerInc, range.upperInc());
             }
             //cmp > 0
-            return new TsRange(lower, upper, lowerInc, upperInc);
+            return TsRange.of(lower, upper, lowerInc, upperInc);
         }
 
-        // greaterThan
+        // greaterThan or equal
         final int cmp = comparePoints(upper, range.upper());
         if (cmp == 0) {
-            return new TsRange(range.lower(), range.upper(), range.lowerInc(), range.upperInc() || upperInc);
+            return TsRange.of(range.lower(), range.upper(), range.lowerInc(), range.upperInc() || upperInc);
         }
         if (cmp < 0) {
-            return new TsRange(range.lower(), range.upper(), range.lowerInc(), range.upperInc());
+            return TsRange.of(range.lower(), range.upper(), range.lowerInc(), range.upperInc());
         }
         //cmp > 0
-        return new TsRange(range.lower(), upper, range.lowerInc(), upperInc);
+        return TsRange.of(range.lower(), upper, range.lowerInc(), upperInc);
     }
 
     public boolean notEq(final TsRange range) {
