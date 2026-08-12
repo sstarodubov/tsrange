@@ -93,7 +93,13 @@ public final class TsRange {
         return upper.isEqual(MINUS_INFINITY) || upper.isEqual(INFINITY);
     }
 
-    public boolean equal(final TsRange range) {
+    public boolean eq(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        if (isEmpty() && range.isEmpty()) {
+            return true;
+        }
         return this.lower.isEqual(range.lower()) &&
                 this.upper.isEqual(range.upper()) &&
                 this.upperInc == range.upperInc() &&
@@ -101,6 +107,9 @@ public final class TsRange {
     }
 
     public boolean lessThan(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
         if (isEmpty() && !range.isEmpty()) {
             return true;
         }

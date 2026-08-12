@@ -233,8 +233,8 @@ public class AIGeneratedTest {
             TsRange result1 = range.merge(empty);
             TsRange result2 = empty.merge(range);
 
-            assertTrue(range.equal(result1));
-            assertTrue(range.equal(result2));
+            assertTrue(range.eq(result1));
+            assertTrue(range.eq(result2));
         }
 
         @Test
@@ -246,7 +246,7 @@ public class AIGeneratedTest {
                     "[)"
             );
             TsRange result = range.merge(range);
-            assertTrue(range.equal(result));
+            assertTrue(range.eq(result));
         }
 
         @Test
@@ -310,7 +310,7 @@ public class AIGeneratedTest {
 
             assertEquals(LocalDateTime.of(2026, 1, 1, 0, 0), result1.lower());
             assertEquals(LocalDateTime.of(2026, 1, 10, 0, 0), result1.upper());
-            assertTrue(result1.equal(result2));
+            assertTrue(result1.eq(result2));
         }
 
         @Test
@@ -394,8 +394,8 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[)"
             );
-            assertTrue(r1.equal(r2));
-            assertTrue(r2.equal(r1));
+            assertTrue(r1.eq(r2));
+            assertTrue(r2.eq(r1));
         }
 
         @Test
@@ -411,7 +411,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[)"
             );
-            assertFalse(r1.equal(r2));
+            assertFalse(r1.eq(r2));
         }
 
         @Test
@@ -427,7 +427,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 6, 0, 0),
                     "[)"
             );
-            assertFalse(r1.equal(r2));
+            assertFalse(r1.eq(r2));
         }
 
         @Test
@@ -443,7 +443,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "()"
             );
-            assertFalse(r1.equal(r2));
+            assertFalse(r1.eq(r2));
         }
 
         @Test
@@ -459,7 +459,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[]"
             );
-            assertFalse(r1.equal(r2));
+            assertFalse(r1.eq(r2));
         }
     }
 
@@ -574,6 +574,40 @@ public class AIGeneratedTest {
             );
             assertFalse(range.lowerInf());
             assertFalse(range.upperInf());
+        }
+    }
+
+    @Nested
+    @DisplayName("equal() - специфика пустых диапазонов")
+    class EqualEmptyRangesTests {
+
+        @Test
+        @DisplayName("Два пустых диапазона с РАЗНЫМИ датами должны быть равны (как в PostgreSQL)")
+        void differentEmptyRangesAreEqual() {
+            TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
+
+            assertTrue(empty1.eq(empty2));
+            assertTrue(empty2.eq(empty1));
+        }
+
+        @Test
+        @DisplayName("Пустой диапазон НЕ равен непустому, даже если даты совпадают")
+        void emptyNotEqualToNonEmpty() {
+            TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            // Создадим диапазон из одной точки (включающий обе границы)
+            TsRange singlePoint = TsRange.of("2026-01-01", "2026-01-01", "[]");
+
+            assertFalse(empty.eq(singlePoint));
+            assertFalse(singlePoint.eq(empty));
+        }
+
+        @Test
+        @DisplayName("Сравнение с null возвращает false, а не кидает NPE")
+        void equalToNullThrowIAE() {
+            TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertThrows(IllegalArgumentException.class, () -> range.eq(null));
         }
     }
 }
