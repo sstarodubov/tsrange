@@ -9,6 +9,48 @@ import static org.junit.jupiter.api.Assertions.*;
 class TsRangeTest {
 
     @Test
+    void lessThan8() {
+        assertTrue(
+                TsRange.of("2001-01-05", "2001-01-05", "()")
+                        .lessThan(TsRange.of("2001-01-05", "2001-01-10", "[)")));
+    }
+
+    @Test
+    void lessThan7() {
+        assertFalse(
+                TsRange.of("2001-01-01", "2001-01-05", "[)")
+                        .lessThan(TsRange.of("2001-01-01", "2001-01-05", "[)")));
+    }
+
+    @Test
+    void lessThan6() {
+        assertTrue(
+                TsRange.of("2001-01-01", "2001-01-05", "[)")
+                        .lessThan(TsRange.of("2001-01-01", "2001-01-05", "[]")));
+    }
+
+    @Test
+    void lessThan5() {
+        assertFalse(
+                TsRange.of("2001-01-01", "2001-01-02", "[]")
+                        .lessThan(TsRange.of("2001-01-01", "2001-01-02", "[]")));
+    }
+
+    @Test
+    void lessThan4() {
+        assertFalse(
+                TsRange.of("2001-01-01", "2001-01-02", "(]")
+                        .lessThan(TsRange.of("2001-01-01", "2001-01-02", "[]")));
+    }
+
+    @Test
+    void lessThan3() {
+        assertFalse(
+                TsRange.of("2001-01-01", "2001-01-06" )
+                        .lessThan(TsRange.of("2001-01-01", "2001-01-05")));
+    }
+
+    @Test
     void lessThan2() {
         assertFalse(
                 TsRange.of("2001-01-01", "2001-01-05", "(]")
@@ -31,7 +73,7 @@ class TsRangeTest {
 
     @Test
     void empty() {
-        assertFalse(TsRange.of(LocalDateTime.MAX, LocalDateTime.MAX).isEmpty());
+        assertTrue(TsRange.of(LocalDateTime.MAX, LocalDateTime.MAX).isEmpty());
     }
 
     @Test
@@ -41,7 +83,7 @@ class TsRangeTest {
 
     @Test
     void empty3() {
-        assertFalse(TsRange.of(LocalDateTime.MAX, LocalDateTime.MAX, "[)").isEmpty());
+        assertTrue(TsRange.of(LocalDateTime.MAX, LocalDateTime.MAX, "[)").isEmpty());
     }
 
     @Test
@@ -52,5 +94,11 @@ class TsRangeTest {
     @Test
     void empty5() {
         assertFalse(TsRange.of(LocalDateTime.MIN, LocalDateTime.MAX, "()").isEmpty());
+    }
+
+    @Test
+    void empty6() {
+        TsRange r = TsRange.of("2026-01-01", "2026-01-01", "[)");
+        assertTrue(r.isEmpty());
     }
 }

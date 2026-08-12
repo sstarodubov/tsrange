@@ -11,7 +11,7 @@ public final class TsRange {
     public final static LocalDateTime MINUS_INFINITY = LocalDateTime.MIN;
     public final static String DEFAULT_BOUNDS = "[)";
 
-    private TsRange(LocalDateTime lower, LocalDateTime upper, boolean lowerInc, boolean upperInc) {
+    TsRange(LocalDateTime lower, LocalDateTime upper, boolean lowerInc, boolean upperInc) {
         this.lower = lower;
         this.upper = upper;
         this.lowerInc = lowerInc;
@@ -66,7 +66,7 @@ public final class TsRange {
     }
 
     public boolean isEmpty() {
-        return lower.isEqual(upper) && !lowerInc && !upperInc;
+        return lower.isEqual(upper) && (!lowerInc || !upperInc);
     }
 
     public LocalDateTime lower() {
@@ -101,28 +101,34 @@ public final class TsRange {
     }
 
     public boolean lessThan(final TsRange range) {
+        if (isEmpty() && !range.isEmpty()) {
+            return true;
+        }
+        if (!isEmpty() && range.isEmpty()) {
+            return false;
+        }
+        if (isEmpty() && range.isEmpty()) {
+            return false; // Оба пустые - равны
+        }
+
         //Сначала сравниваются нижние границы.
         final int lowerCmp = compareLower(range);
-        if (lowerCmp == -1) {
+        if (lowerCmp < 0) {
             return true;
         }
 
-        if (lowerCmp == 1) {
+        if (lowerCmp > 0) {
             return false;
         }
 
         //Если они равны, сравниваются верхние границы.
         final int upperCmp = compareUpper(range);
-        if (upperCmp == -1) {
-            return true;
-        }
-        if (upperCmp == 1) {
-            return false;
-        }
 
-        //сравниваем границы
-        if (lowerInc && !upperInc) {
+        if (upperCmp < 0) {
             return true;
+        }
+        if (upperCmp > 0) {
+            return false;
         }
 
         return false;
@@ -141,7 +147,7 @@ public final class TsRange {
         if (cmp != 0) {
             return cmp;
         }
-        return compareBounds(upperInc, range.upperInc);
+        return compareBounds(range.upperInc, upperInc);
     }
 
     private int compareLower(final TsRange range) {
@@ -178,15 +184,6 @@ public final class TsRange {
         сравнение временных точек
      */
     private static int comparePoints(final LocalDateTime d1, final LocalDateTime d2) {
-        if (d1.isBefore(d2)) {
-            return -1;
-        }
-
-        if (d1.isAfter(d2)) {
-            return 1;
-        }
-
-        return 0;
+        return d1.compareTo(d2);
     }
-
 }
