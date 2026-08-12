@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'me.champeau.jmh' version '0.7.2'
+}
+
+def jmhLibVersion = '1.37'
+
+group = 'ru.starodubov'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+
+jmh {
+    // JMH version used by the plugin
+    jmhVersion = jmhLibVersion
+
+    // Run only benchmarks matching this regex
+    //includes = ['.*AllocationBenchmark.*']
+
+    // Benchmark mode: average time
+    benchmarkMode = ['avgt']
+    // Output unit
+    timeUnit = 'ns'
+
+    // Short iteration settings for a quick example
+    //warmupIterations = 2
+    //iterations = 3
+    //fork = 1
+
+    // Enable the GC profiler: equivalent to -prof gc
+    profilers = ['gc']
+
+
+    // Optional JSON output
+    // resultFormat = 'JSON'
+    // resultsFile = project.layout.buildDirectory.file('reports/jmh/results.json').get().asFile
+}
+
+dependencies {
+    jmh "org.openjdk.jmh:jmh-core:${jmhLibVersion}"
+    jmhAnnotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhLibVersion}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
