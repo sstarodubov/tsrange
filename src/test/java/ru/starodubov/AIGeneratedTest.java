@@ -1,6 +1,5 @@
 package ru.starodubov;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,224 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class AIGeneratedTest {
 
+    @Nested
+    @DisplayName("Баг 1: Смешивание включительности при разных нижних границах")
+    class DifferentLowerBoundsBugTests {
+
+        @Test
+        @DisplayName("Ветка lessThan: r1.lower < r2.lower, но верхние равны")
+        void bug1_lessThanBranch_upperEqual() {
+            // r1: (2026-01-01, 2026-01-05) — нижняя исключающая
+            // r2: [2026-01-03, 2026-01-05) — нижняя включающая
+            // Верхние границы равны: 2026-01-05
+
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "()"  // нижняя исключающая
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[)"  // нижняя включающая
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            // ОЖИДАЕМОЕ: (2026-01-01, 2026-01-05)
+            // Мы берём нижнюю границу из r1 (она меньше), поэтому она должна остаться исключающей
+
+            assertEquals(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    merged.lower(),
+                    "Нижняя граница должна быть из r1"
+            );
+
+            assertFalse(
+                    merged.lowerInc(),
+                    "Нижняя граница должна быть ИСКЛЮЧАЮЩЕЙ, потому что мы берём её из r1, " +
+                            "где она исключающая. Включительность r2 (относится к 2026-01-03) не должна влиять на 2026-01-01"
+            );
+
+            assertEquals(
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    merged.upper()
+            );
+        }
+
+        @Test
+        @DisplayName("Ветка greaterThan: r1.lower > r2.lower, но верхние равны")
+        void bug1_greaterThanBranch_upperEqual() {
+            // r1: [2026-01-03, 2026-01-05) — нижняя включающая
+            // r2: (2026-01-01, 2026-01-05) — нижняя исключающая
+            // Верхние границы равны: 2026-01-05
+
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[)"  // нижняя включающая
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "()"  // нижняя исключающая
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            // ОЖИДАЕМОЕ: (2026-01-01, 2026-01-05)
+            // Мы берём нижнюю границу из r2 (она меньше), поэтому она должна остаться исключающей
+
+            assertEquals(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    merged.lower(),
+                    "Нижняя граница должна быть из r2"
+            );
+
+            assertFalse(
+                    merged.lowerInc(),
+                    "Нижняя граница должна быть ИСКЛЮЧАЮЩЕЙ, потому что мы берём её из r2, " +
+                            "где она исключающая. Включительность r1 (относится к 2026-01-03) не должна влиять на 2026-01-01"
+            );
+        }
+
+        @Test
+        @DisplayName("Симметричный тест: r2.merge(r1) должен давать тот же результат")
+        void bug1_commutativity() {
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "()"
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[)"
+            );
+
+            TsRange merged1 = r1.merge(r2);
+            TsRange merged2 = r2.merge(r1);
+
+            assertEquals(merged1.lower(), merged2.lower());
+            assertEquals(merged1.upper(), merged2.upper());
+            assertEquals(merged1.lowerInc(), merged2.lowerInc(),
+                    "Включительность должна быть одинаковой независимо от порядка");
+            assertEquals(merged1.upperInc(), merged2.upperInc());
+        }
+    }
+
+    @Nested
+    @DisplayName("Корректные случаи (должны работать правильно)")
+    class CorrectCasesTests {
+
+        @Test
+        @DisplayName("Одинаковые нижние границы: включительность должна объединяться через ИЛИ")
+        void sameLowerBounds_shouldMergeInclusive() {
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "()"  // исключающая
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 7, 0, 0),
+                    "[)"  // включающая
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            // ОЖИДАЕМОЕ: [2026-01-01, 2026-01-07)
+            // Нижние границы равны, поэтому объединяем включительность: false || true = true
+
+            assertEquals(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    merged.lower()
+            );
+
+            assertTrue(
+                    merged.lowerInc(),
+                    "Когда нижние границы равны, включительность должна объединяться через ИЛИ"
+            );
+        }
+
+        @Test
+        @DisplayName("Одинаковые верхние границы: включительность должна объединяться через ИЛИ")
+        void sameUpperBounds_shouldMergeInclusive() {
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[)"  // исключающая верхняя
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[]"  // включающая верхняя
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            // ОЖИДАЕМОЕ: [2026-01-01, 2026-01-05]
+
+            assertEquals(
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    merged.upper()
+            );
+
+            assertTrue(
+                    merged.upperInc(),
+                    "Когда верхние границы равны, включительность должна объединяться через ИЛИ"
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Дополнительные edge cases")
+    class EdgeCasesTests {
+
+        @Test
+        @DisplayName("Обе нижние границы исключающие")
+        void bothLowerBoundsExclusive() {
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "()"
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 7, 0, 0),
+                    "()"
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            assertFalse(
+                    merged.lowerInc(),
+                    "Когда берём нижнюю границу из r1 (меньшую), она должна остаться исключающей"
+            );
+        }
+
+        @Test
+        @DisplayName("Обе нижние границы включающие")
+        void bothLowerBoundsInclusive() {
+            TsRange r1 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2026, 1, 5, 0, 0),
+                    "[)"
+            );
+            TsRange r2 = TsRange.of(
+                    LocalDateTime.of(2026, 1, 3, 0, 0),
+                    LocalDateTime.of(2026, 1, 7, 0, 0),
+                    "[)"
+            );
+
+            TsRange merged = r1.merge(r2);
+
+            assertTrue(
+                    merged.lowerInc(),
+                    "Когда берём нижнюю границу из r1 (меньшую), она должна остаться включающей"
+            );
+        }
+    }
     @Nested
     @DisplayName("isEmpty()")
     class IsEmptyTests {
@@ -211,7 +428,6 @@ public class AIGeneratedTest {
         }
     }
 
-    @Disabled //todo(enable after implementation)
     @Nested
     @DisplayName("merge()")
     class MergeTests {

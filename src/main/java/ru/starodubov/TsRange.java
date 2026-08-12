@@ -144,11 +144,46 @@ public final class TsRange {
     }
 
     /*
-    Computes the smallest range that includes both of the given ranges.
-    range_merge('[1,2)'::int4range, '[3,4)'::int4range) → [1,4)
+     объединяет два диапазона в один общий минимальный охватывающий диапазон.
      */
     public TsRange merge(final TsRange range) {
-        throw new UnsupportedOperationException();
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        if (range.isEmpty()) {
+            return this;
+        }
+
+        if (isEmpty()) {
+            return range;
+        }
+
+        if (lessThan(range)) {
+            final int cmp = comparePoints(upper, range.upper());
+            if (cmp == 0) {
+                return new TsRange(lower, upper, lowerInc, upperInc || range.upperInc());
+            }
+            if (cmp < 0) {
+                return new TsRange(lower, range.upper(), lowerInc, range.upperInc());
+            }
+            //cmp > 0
+            return new TsRange(lower, upper, lowerInc, upperInc);
+        }
+
+        // greaterThan
+        final int cmp = comparePoints(upper, range.upper());
+        if (cmp == 0) {
+            return new TsRange(range.lower(), range.upper(), range.lowerInc(), range.upperInc() || upperInc);
+        }
+        if (cmp < 0) {
+            return new TsRange(range.lower(), range.upper(), range.lowerInc(), range.upperInc());
+        }
+        //cmp > 0
+        return new TsRange(range.lower(), upper, range.lowerInc(), upperInc);
+    }
+
+    public boolean notEq(final TsRange range) {
+        return !eq(range);
     }
 
     private int compareUpper(final TsRange range) {
@@ -156,6 +191,7 @@ public final class TsRange {
         if (cmp != 0) {
             return cmp;
         }
+        //сравниваем инверисонно
         return compareBounds(range.upperInc, upperInc);
     }
 
@@ -189,6 +225,7 @@ public final class TsRange {
         // cannot reach here
         throw new RuntimeException();
     }
+
     /*
         сравнение временных точек
      */
