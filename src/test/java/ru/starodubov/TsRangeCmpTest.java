@@ -10,8 +10,7 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AIGeneratedTest {
-
+public class TsRangeCmpTest {
 
     @Nested
     @DisplayName("Пустые диапазоны")
