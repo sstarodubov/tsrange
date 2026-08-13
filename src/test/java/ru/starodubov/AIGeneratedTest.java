@@ -13,6 +13,186 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AIGeneratedTest {
 
     @Nested
+    @DisplayName("Пустые диапазоны")
+    class EmptyRangeTests {
+
+        @Test
+        @DisplayName("Пустой НЕ больше непустого")
+        void emptyNotGreaterThanNonEmpty() {
+            TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(empty.greaterThan(nonEmpty));
+        }
+
+        @Test
+        @DisplayName("Непустой больше пустого")
+        void nonEmptyGreaterThanEmpty() {
+            TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+
+            assertTrue(nonEmpty.greaterThan(empty));
+        }
+
+        @Test
+        @DisplayName("Два пустых диапазона не больше друг друга")
+        void emptyNotGreaterThanEmpty() {
+            TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
+
+            assertFalse(empty1.greaterThan(empty2));
+            assertFalse(empty2.greaterThan(empty1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Идентичные диапазоны")
+    class IdenticalRangesTests {
+
+        @Test
+        @DisplayName("Идентичный диапазон не больше самого себя")
+        void identicalRangeNotGreaterThanSelf() {
+            TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(range.greaterThan(range));
+        }
+
+        @Test
+        @DisplayName("Два одинаковых диапазона не больше друг друга")
+        void twoIdenticalRangesNotGreaterThan() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(r1.greaterThan(r2));
+            assertFalse(r2.greaterThan(r1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Разные нижние границы")
+    class DifferentLowerBoundsTests {
+
+        @Test
+        @DisplayName("Большая нижняя граница = больший диапазон")
+        void largerLowerBoundMeansGreater() {
+            TsRange later = TsRange.of("2026-01-05", "2026-01-10", "[)");
+            TsRange earlier = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+            assertTrue(later.greaterThan(earlier));
+            assertFalse(earlier.greaterThan(later));
+        }
+
+        @Test
+        @DisplayName("Включающая нижняя граница больше исключающей при равных точках")
+        void inclusiveLowerGreaterThanExclusive() {
+            // [2026-01-01, ...) > (2026-01-01, ...)
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "()");
+
+            assertFalse(inclusive.greaterThan(exclusive));
+            assertTrue(exclusive.greaterThan(inclusive));
+        }
+    }
+
+    @Nested
+    @DisplayName("Одинаковые нижние, разные верхние")
+    class SameLowerDifferentUpperTests {
+
+        @Test
+        @DisplayName("Большая верхняя граница = больший диапазон")
+        void largerUpperBoundMeansGreater() {
+            TsRange longer = TsRange.of("2026-01-01", "2026-01-10", "[)");
+            TsRange shorter = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(longer.greaterThan(shorter));
+            assertFalse(shorter.greaterThan(longer));
+        }
+
+        @Test
+        @DisplayName("Включающая верхняя граница больше исключающей при равных точках")
+        void inclusiveUpperGreaterThanExclusive() {
+            // [..., 2026-01-05] > [..., 2026-01-05)
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[]");
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(inclusive.greaterThan(exclusive));
+            assertFalse(exclusive.greaterThan(inclusive));
+        }
+    }
+
+    @Nested
+    @DisplayName("Симметрия с lessThan")
+    class SymmetryTests {
+
+        @Test
+        @DisplayName("a.greaterThan(b) <=> b.lessThan(a)")
+        void symmetryWithLessThan() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+            // r1 < r2, значит r2 > r1
+            assertTrue(r1.lessThan(r2));
+            assertTrue(r2.greaterThan(r1));
+
+            // Обратное неверно
+            assertFalse(r2.lessThan(r1));
+            assertFalse(r1.greaterThan(r2));
+        }
+
+        @Test
+        @DisplayName("Для равных диапазонов оба метода возвращают false")
+        void equalRangesBothFalse() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(r1.lessThan(r2));
+            assertFalse(r2.lessThan(r1));
+            assertFalse(r1.greaterThan(r2));
+            assertFalse(r2.greaterThan(r1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Обработка null")
+    class NullHandlingTests {
+
+        @Test
+        @DisplayName("greaterThan(null) бросает IllegalArgumentException")
+        void nullThrowsException() {
+            TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertThrows(IllegalArgumentException.class, () -> range.greaterThan(null));
+        }
+    }
+
+    @Nested
+    @DisplayName("Комбинация разных включительностей")
+    class MixedInclusiveTests {
+
+        @Test
+        @DisplayName("Разные нижние границы с разной включительностью")
+        void differentLowerWithDifferentInclusivity() {
+            // (2026-01-05, ...) vs [2026-01-01, ...)
+            // Нижняя 01-05 > 01-01, значит первый больше
+            TsRange r1 = TsRange.of("2026-01-05", "2026-01-10", "()");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+            assertTrue(r1.greaterThan(r2));
+        }
+
+        @Test
+        @DisplayName("Разные верхние границы с разной включительностью")
+        void differentUpperWithDifferentInclusivity() {
+            // [..., 2026-01-10) vs [..., 2026-01-05]
+            // Верхняя 01-10 > 01-05, значит первый больше
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-10", "[)");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[]");
+
+            assertTrue(r1.greaterThan(r2));
+        }
+    }
+
+    @Nested
     @DisplayName("Баг 1: Смешивание включительности при разных нижних границах")
     class DifferentLowerBoundsBugTests {
 
@@ -449,8 +629,8 @@ public class AIGeneratedTest {
             TsRange result1 = range.merge(empty);
             TsRange result2 = empty.merge(range);
 
-            assertTrue(range.eq(result1));
-            assertTrue(range.eq(result2));
+            assertTrue(range.isEqual(result1));
+            assertTrue(range.isEqual(result2));
         }
 
         @Test
@@ -462,7 +642,7 @@ public class AIGeneratedTest {
                     "[)"
             );
             TsRange result = range.merge(range);
-            assertTrue(range.eq(result));
+            assertTrue(range.isEqual(result));
         }
 
         @Test
@@ -526,7 +706,7 @@ public class AIGeneratedTest {
 
             assertEquals(LocalDateTime.of(2026, 1, 1, 0, 0), result1.lower());
             assertEquals(LocalDateTime.of(2026, 1, 10, 0, 0), result1.upper());
-            assertTrue(result1.eq(result2));
+            assertTrue(result1.isEqual(result2));
         }
 
         @Test
@@ -610,8 +790,8 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[)"
             );
-            assertTrue(r1.eq(r2));
-            assertTrue(r2.eq(r1));
+            assertTrue(r1.isEqual(r2));
+            assertTrue(r2.isEqual(r1));
         }
 
         @Test
@@ -627,7 +807,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[)"
             );
-            assertFalse(r1.eq(r2));
+            assertFalse(r1.isEqual(r2));
         }
 
         @Test
@@ -643,7 +823,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 6, 0, 0),
                     "[)"
             );
-            assertFalse(r1.eq(r2));
+            assertFalse(r1.isEqual(r2));
         }
 
         @Test
@@ -659,7 +839,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "()"
             );
-            assertFalse(r1.eq(r2));
+            assertFalse(r1.isEqual(r2));
         }
 
         @Test
@@ -675,7 +855,7 @@ public class AIGeneratedTest {
                     LocalDateTime.of(2026, 1, 5, 0, 0),
                     "[]"
             );
-            assertFalse(r1.eq(r2));
+            assertFalse(r1.isEqual(r2));
         }
     }
 
@@ -803,8 +983,8 @@ public class AIGeneratedTest {
             TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
 
-            assertTrue(empty1.eq(empty2));
-            assertTrue(empty2.eq(empty1));
+            assertTrue(empty1.isEqual(empty2));
+            assertTrue(empty2.isEqual(empty1));
         }
 
         @Test
@@ -814,8 +994,8 @@ public class AIGeneratedTest {
             // Создадим диапазон из одной точки (включающий обе границы)
             TsRange singlePoint = TsRange.of("2026-01-01", "2026-01-01", "[]");
 
-            assertFalse(empty.eq(singlePoint));
-            assertFalse(singlePoint.eq(empty));
+            assertFalse(empty.isEqual(singlePoint));
+            assertFalse(singlePoint.isEqual(empty));
         }
 
         @Test
@@ -823,7 +1003,7 @@ public class AIGeneratedTest {
         void equalToNullThrowIAE() {
             TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
 
-            assertThrows(IllegalArgumentException.class, () -> range.eq(null));
+            assertThrows(IllegalArgumentException.class, () -> range.isEqual(null));
         }
     }
 }
