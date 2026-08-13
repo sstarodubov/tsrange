@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 /**
  * Примеры из документации постгрес
 operator|  description                |  example                                                |   result
-    =	is equal	                        int4range(1,5) = '[1,4]'::int4range	                            t
+    =	is equal	                        int4range(1,5) = '[1,4]'::int4range	                        t
     <>	not equal	                    numrange(1.1,2.2) <> numrange(1.1,2.3)	                        t
     <	less than	                    int4range(1,10) < int4range(2,3)	                            t
     >	greater than	                int4range(1,10) > int4range(1,5)	                            t
@@ -131,6 +131,23 @@ public final class TsRange {
                 this.upper.isEqual(range.upper()) &&
                 this.upperInc == range.upperInc() &&
                 this.lowerInc == range.lowerInc();
+    }
+
+    public boolean greaterThanOrEqual(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+
+        return !lessThan(range);
+    }
+
+    public boolean lessThanOrEqual(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        return !greaterThan(range);
     }
 
     public boolean lessThan(final TsRange range) {

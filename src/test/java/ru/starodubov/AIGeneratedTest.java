@@ -12,6 +12,531 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class AIGeneratedTest {
 
+
+    @Nested
+    @DisplayName("Пустые диапазоны")
+    class LEEmptyRangeTests {
+
+        @Nested
+        @DisplayName("Пустые диапазоны")
+        class EmptyRangeTests {
+
+            @Test
+            @DisplayName("Непустой >= пустой: true")
+            void nonEmptyGreaterThanOrEqualEmpty() {
+                TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+
+                assertTrue(nonEmpty.greaterThanOrEqual(empty));
+            }
+
+            @Test
+            @DisplayName("Пустой >= непустой: false")
+            void emptyNotGreaterThanOrEqualNonEmpty() {
+                TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+                TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertFalse(empty.greaterThanOrEqual(nonEmpty));
+            }
+
+            @Test
+            @DisplayName("Два пустых диапазона >= друг друга: true (они равны)")
+            void emptyGreaterThanOrEqualEmpty() {
+                TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
+                TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
+
+                assertTrue(empty1.greaterThanOrEqual(empty2));
+                assertTrue(empty2.greaterThanOrEqual(empty1));
+            }
+        }
+
+        @Nested
+        @DisplayName("Идентичные диапазоны")
+        class IdenticalRangesTests {
+
+            @Test
+            @DisplayName("Диапазон >= сам себя: true")
+            void rangeGreaterThanOrEqualSelf() {
+                TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(range.greaterThanOrEqual(range));
+            }
+
+            @Test
+            @DisplayName("Два одинаковых диапазона >= друг друга: true")
+            void twoIdenticalRangesGreaterThanOrEqual() {
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+                assertTrue(r2.greaterThanOrEqual(r1));
+            }
+
+            @Test
+            @DisplayName("Одинаковые значения с одинаковой включительностью: true")
+            void sameValuesSameInclusivity() {
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[]");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[]");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+            }
+        }
+
+        @Nested
+        @DisplayName("Строго больше (greaterThan = true)")
+        class StrictlyGreaterTests {
+
+            @Test
+            @DisplayName("Большая нижняя граница: true")
+            void largerLowerBound() {
+                TsRange later = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange earlier = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+                assertTrue(later.greaterThanOrEqual(earlier));
+            }
+
+            @Test
+            @DisplayName("Одинаковые нижние, большая верхняя: true")
+            void sameLowerLargerUpper() {
+                TsRange longer = TsRange.of("2026-01-01", "2026-01-10", "[)");
+                TsRange shorter = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(longer.greaterThanOrEqual(shorter));
+            }
+
+            @Test
+            @DisplayName("Исключающая нижняя >= включающей нижней при равных точках: false")
+            void exclusiveLowerNotGreaterThanOrEqualInclusive() {
+                TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "()");
+                TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(exclusive.greaterThanOrEqual(inclusive));
+            }
+
+            @Test
+            @DisplayName("Включающая нижняя >= исключающей нижней при равных точках: true")
+            void inclusiveLowerGreaterThanOrEqualExclusive() {
+                TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "()");
+
+                assertFalse(inclusive.greaterThanOrEqual(exclusive));
+            }
+
+            @Test
+            @DisplayName("Включающая верхняя >= исключающей верхней при равных точках: true")
+            void inclusiveUpperGreaterThanOrEqualExclusive() {
+                TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[]");
+                TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(inclusive.greaterThanOrEqual(exclusive));
+            }
+
+            @Test
+            @DisplayName("Исключающая верхняя >= включающей верхней при равных точках: false")
+            void exclusiveUpperNotGreaterThanOrEqualInclusive() {
+                TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[]");
+
+                assertFalse(exclusive.greaterThanOrEqual(inclusive));
+            }
+        }
+
+        @Nested
+        @DisplayName("Строго меньше (greaterThan = false, equal = false)")
+        class StrictlyLessTests {
+
+            @Test
+            @DisplayName("Меньшая нижняя граница: false")
+            void smallerLowerBound() {
+                TsRange earlier = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange later = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+                assertFalse(earlier.greaterThanOrEqual(later));
+            }
+
+            @Test
+            @DisplayName("Одинаковые нижние, меньшая верхняя: false")
+            void sameLowerSmallerUpper() {
+                TsRange shorter = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange longer = TsRange.of("2026-01-01", "2026-01-10", "[)");
+
+                assertFalse(shorter.greaterThanOrEqual(longer));
+            }
+        }
+
+        @Nested
+        @DisplayName("Связь с другими методами")
+        class RelationshipTests {
+
+            @Test
+            @DisplayName("greaterThanOrEqual = greaterThan OR equal")
+            void greaterThanOrEqualIsGreaterThanOrEqual() {
+                TsRange r1 = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-03", "[)");
+                TsRange r3 = TsRange.of("2026-01-05", "2026-01-10", "[)");
+
+                // r1 > r2, r1 != r2
+                assertTrue(r1.greaterThan(r2));
+                assertFalse(r1.isEqual(r2));
+                assertTrue(r1.greaterThanOrEqual(r2));
+
+                // r1 == r3
+                assertFalse(r1.greaterThan(r3));
+                assertTrue(r1.isEqual(r3));
+                assertTrue(r1.greaterThanOrEqual(r3));
+            }
+
+            @Test
+            @DisplayName("greaterThanOrEqual = NOT lessThan")
+            void greaterThanOrEqualIsNotLessThan() {
+                TsRange r1 = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+                assertFalse(r1.lessThan(r2));
+
+                assertFalse(r2.greaterThanOrEqual(r1));
+                assertTrue(r2.lessThan(r1));
+            }
+
+            @Test
+            @DisplayName("Симметрия: a >= b <=> b <= a")
+            void symmetryWithLessThanOrEqual() {
+                TsRange r1 = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+                assertTrue(r2.lessThanOrEqual(r1));
+
+                assertFalse(r2.greaterThanOrEqual(r1));
+                assertFalse(r1.lessThanOrEqual(r2));
+            }
+        }
+
+        @Nested
+        @DisplayName("Обработка null")
+        class NullHandlingTests {
+
+            @Test
+            @DisplayName("greaterThanOrEqual(null) бросает IllegalArgumentException")
+            void nullThrowsException() {
+                TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertThrows(IllegalArgumentException.class, () -> range.greaterThanOrEqual(null));
+            }
+        }
+
+        @Nested
+        @DisplayName("Математические свойства")
+        class MathematicalPropertyTests {
+
+            @Test
+            @DisplayName("Если a >= b и b >= a, то a == b (антисимметричность)")
+            void antisymmetry() {
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+                assertTrue(r2.greaterThanOrEqual(r1));
+                assertTrue(r1.isEqual(r2));
+            }
+
+            @Test
+            @DisplayName("Если a >= b и b >= c, то a >= c (транзитивность)")
+            void transitivity() {
+                TsRange a = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange b = TsRange.of("2026-01-03", "2026-01-07", "[)");
+                TsRange c = TsRange.of("2026-01-01", "2026-01-04", "[)");
+
+                assertTrue(a.greaterThanOrEqual(b));
+                assertTrue(b.greaterThanOrEqual(c));
+                assertTrue(a.greaterThanOrEqual(c));
+            }
+
+            @Test
+            @DisplayName("Для любых a и b: либо a >= b, либо b >= a (полнота)")
+            void totality() {
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange r2 = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2) || r2.greaterThanOrEqual(r1));
+            }
+
+            @Test
+            @DisplayName("Рефлексивность: a >= a всегда true")
+            void reflexivity() {
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-01", "[)"); // пустой
+
+                assertTrue(r1.greaterThanOrEqual(r1));
+                assertTrue(r2.greaterThanOrEqual(r2));
+            }
+        }
+
+        @Nested
+        @DisplayName("Комбинация разных включительностей")
+        class MixedInclusiveTests {
+
+            @Test
+            @DisplayName("Разные нижние границы с разной включительностью")
+            void differentLowerWithDifferentInclusivity() {
+                // [2026-01-05, ...) >= (2026-01-01, ...)
+                TsRange r1 = TsRange.of("2026-01-05", "2026-01-10", "[)");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-03", "()");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+            }
+
+            @Test
+            @DisplayName("Разные верхние границы с разной включительностью")
+            void differentUpperWithDifferentInclusivity() {
+                // [..., 2026-01-10] >= [..., 2026-01-05)
+                TsRange r1 = TsRange.of("2026-01-01", "2026-01-10", "[]");
+                TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+                assertTrue(r1.greaterThanOrEqual(r2));
+            }
+
+            @Test
+            @DisplayName("Полная инверсия: все границы разные")
+            void completeInversion() {
+                TsRange bigger = TsRange.of("2026-01-05", "2026-01-10", "[]");
+                TsRange smaller = TsRange.of("2026-01-01", "2026-01-03", "()");
+
+                assertTrue(bigger.greaterThanOrEqual(smaller));
+                assertFalse(smaller.greaterThanOrEqual(bigger));
+            }
+        }
+
+        @Test
+        @DisplayName("Пустой <= непустой: true")
+        void emptyLessThanOrEqualNonEmpty() {
+            TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(empty.lessThanOrEqual(nonEmpty));
+        }
+
+        @Test
+        @DisplayName("Непустой <= пустой: false")
+        void nonEmptyNotLessThanOrEqualEmpty() {
+            TsRange nonEmpty = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
+
+            assertFalse(nonEmpty.lessThanOrEqual(empty));
+        }
+
+        @Test
+        @DisplayName("Два пустых диапазона <= друг друга: true (они равны)")
+        void emptyLessThanOrEqualEmpty() {
+            TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
+            TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
+
+            assertTrue(empty1.lessThanOrEqual(empty2));
+            assertTrue(empty2.lessThanOrEqual(empty1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Идентичные диапазоны")
+    class LEIdenticalRangesTests {
+
+        @Test
+        @DisplayName("Диапазон <= сам себя: true")
+        void rangeLessThanOrEqualSelf() {
+            TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(range.lessThanOrEqual(range));
+        }
+
+        @Test
+        @DisplayName("Два одинаковых диапазона <= друг друга: true")
+        void twoIdenticalRangesLessThanOrEqual() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(r1.lessThanOrEqual(r2));
+            assertTrue(r2.lessThanOrEqual(r1));
+        }
+
+        @Test
+        @DisplayName("Одинаковые значения с одинаковой включительностью: true")
+        void sameValuesSameInclusivity() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[]");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[]");
+
+            assertTrue(r1.lessThanOrEqual(r2));
+        }
+    }
+
+    @Nested
+    @DisplayName("Строго меньше (lessThan = true)")
+    class StrictlyLessTests {
+
+        @Test
+        @DisplayName("Меньшая нижняя граница: true")
+        void smallerLowerBound() {
+            TsRange earlier = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange later = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+            assertTrue(earlier.lessThanOrEqual(later));
+        }
+
+        @Test
+        @DisplayName("Одинаковые нижние, меньшая верхняя: true")
+        void sameLowerSmallerUpper() {
+            TsRange shorter = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange longer = TsRange.of("2026-01-01", "2026-01-10", "[)");
+
+            assertTrue(shorter.lessThanOrEqual(longer));
+        }
+
+        @Test
+        @DisplayName("Включающая нижняя <= исключающей нижней при равных точках: true")
+        void inclusiveLowerLessThanOrEqualExclusive() {
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "()");
+
+            assertTrue(inclusive.lessThanOrEqual(exclusive));
+        }
+
+        @Test
+        @DisplayName("Исключающая верхняя <= включающей верхней при равных точках: true")
+        void exclusiveUpperLessThanOrEqualInclusive() {
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[]");
+
+            assertTrue(exclusive.lessThanOrEqual(inclusive));
+        }
+    }
+
+    @Nested
+    @DisplayName("Строго больше (lessThan = false, equal = false)")
+    class StrictlyGreaterTests {
+
+        @Test
+        @DisplayName("Большая нижняя граница: false")
+        void largerLowerBound() {
+            TsRange later = TsRange.of("2026-01-05", "2026-01-10", "[)");
+            TsRange earlier = TsRange.of("2026-01-01", "2026-01-03", "[)");
+
+            assertFalse(later.lessThanOrEqual(earlier));
+        }
+
+        @Test
+        @DisplayName("Одинаковые нижние, большая верхняя: false")
+        void sameLowerLargerUpper() {
+            TsRange longer = TsRange.of("2026-01-01", "2026-01-10", "[)");
+            TsRange shorter = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(longer.lessThanOrEqual(shorter));
+        }
+
+        @Test
+        @DisplayName("Исключающая нижняя <= включающей нижней при равных точках: false")
+        void exclusiveLowerNotLessThanOrEqualInclusive() {
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "()");
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(exclusive.lessThanOrEqual(inclusive));
+        }
+
+        @Test
+        @DisplayName("Включающая верхняя <= исключающей верхней при равных точках: false")
+        void inclusiveUpperNotLessThanOrEqualExclusive() {
+            TsRange inclusive = TsRange.of("2026-01-01", "2026-01-05", "[]");
+            TsRange exclusive = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertFalse(inclusive.lessThanOrEqual(exclusive));
+        }
+    }
+
+    @Nested
+    @DisplayName("Связь с lessThan и equal")
+    class RelationshipTests {
+
+        @Test
+        @DisplayName("lessThanOrEqual = lessThan OR equal")
+        void lessThanOrEqualIsLessThanOrEqual() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-03", "2026-01-10", "[)");
+            TsRange r3 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            // r1 < r2, r1 != r2
+            assertTrue(r1.lessThan(r2));
+            assertFalse(r1.isEqual(r2));
+            assertTrue(r1.lessThanOrEqual(r2));
+
+            // r1 == r3
+            assertFalse(r1.lessThan(r3));
+            assertTrue(r1.isEqual(r3));
+            assertTrue(r1.lessThanOrEqual(r3));
+        }
+
+        @Test
+        @DisplayName("lessThanOrEqual = NOT greaterThan")
+        void lessThanOrEqualIsNotGreaterThan() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+            assertTrue(r1.lessThanOrEqual(r2));
+            assertFalse(r1.greaterThan(r2));
+
+            assertFalse(r2.lessThanOrEqual(r1));
+            assertTrue(r2.greaterThan(r1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Обработка null")
+    class LeNullHandlingTests {
+
+        @Test
+        @DisplayName("lessThanOrEqual(null) бросает IllegalArgumentException")
+        void nullThrowsException() {
+            TsRange range = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertThrows(IllegalArgumentException.class, () -> range.lessThanOrEqual(null));
+        }
+    }
+
+    @Nested
+    @DisplayName("Коммутативность и транзитивность")
+    class MathematicalPropertyTests {
+
+        @Test
+        @DisplayName("Если a <= b и b <= a, то a == b")
+        void antisymmetry() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+
+            assertTrue(r1.lessThanOrEqual(r2));
+            assertTrue(r2.lessThanOrEqual(r1));
+            assertTrue(r1.isEqual(r2));
+        }
+
+        @Test
+        @DisplayName("Если a <= b и b <= c, то a <= c (транзитивность)")
+        void transitivity() {
+            TsRange a = TsRange.of("2026-01-01", "2026-01-03", "[)");
+            TsRange b = TsRange.of("2026-01-02", "2026-01-05", "[)");
+            TsRange c = TsRange.of("2026-01-04", "2026-01-10", "[)");
+
+            assertTrue(a.lessThanOrEqual(b));
+            assertTrue(b.lessThanOrEqual(c));
+            assertTrue(a.lessThanOrEqual(c));
+        }
+
+        @Test
+        @DisplayName("Для любых a и b: либо a <= b, либо b <= a (полнота)")
+        void totality() {
+            TsRange r1 = TsRange.of("2026-01-01", "2026-01-05", "[)");
+            TsRange r2 = TsRange.of("2026-01-03", "2026-01-10", "[)");
+
+            assertTrue(r1.lessThanOrEqual(r2) || r2.lessThanOrEqual(r1));
+        }
+    }
+
     @Nested
     @DisplayName("Пустые диапазоны")
     class EmptyRangeTests {
@@ -410,6 +935,7 @@ public class AIGeneratedTest {
             );
         }
     }
+
     @Nested
     @DisplayName("isEmpty()")
     class IsEmptyTests {
