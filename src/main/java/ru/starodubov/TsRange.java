@@ -12,8 +12,8 @@ operator|  description                |  example                                
     >=	greater than or equal	        numrange(1.1,2.2) >= numrange(1.1,2.0)	                        t               +
     @>	contains range	                int4range(2,4) @> int4range(2,3)	                            t               +
     @>	contains element	            '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp	t               +
-    <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               -
-    &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               -
+    <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               +
+    &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               +
     <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               -
     >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               -
     &<	does not extend to the right of	int8range(1,20) &< int8range(18,20)	                            t               -
@@ -248,6 +248,34 @@ public final class TsRange {
         return false;
     }
 
+    public boolean overlaps(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        if (range.isEmpty() || this.isEmpty()) {
+            return false;
+        }
+
+        if (this.lessThan(range)) {
+            final int cmp = comparePoints(this.upper(), range.lower());
+            if (cmp > 0) {
+                return true;
+            } else if (cmp < 0) {
+                return false;
+            } else {
+                return this.upperInc() && range.lowerInc();
+            }
+        }
+
+        final int cmp = comparePoints(this.lower(), range.upper());
+        if (cmp > 0) {
+           return false;
+        } else if (cmp < 0) {
+           return true;
+        } else {
+            return this.lowerInc() && range.upperInc();
+        }
+    }
     /*
      объединяет два диапазона в один общий минимальный охватывающий диапазон.
      */
