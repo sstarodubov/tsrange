@@ -13,7 +13,6 @@ operator|  description                |  example                                
     @>	contains range	                int4range(2,4) @> int4range(2,3)	                            t               +
     @>	contains element	            '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp	t               +
     <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               -
-    <@	element is contained by	        42 <@ int4range(1,7)	                                        f               -
     &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               -
     <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               -
     >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               -
@@ -156,6 +155,14 @@ public final class TsRange {
         }
 
         return false;
+    }
+
+    public boolean rangeIsContainedBy(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range is null");
+        }
+
+        return range.containsRange(this);
     }
 
     public boolean lowerInc() {
