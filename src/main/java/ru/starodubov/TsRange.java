@@ -16,8 +16,8 @@ operator|  description                |  example                                
     &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               +
     <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               -
     >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               -
-    &<	does not extend to the right of	int8range(1,20) &< int8range(18,20)	                            t               -
-    &>	does not extend to the left of	int8range(7,20) &> int8range(5,10)	                            t               -
+    &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               -
+    &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               -
     -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               -
     +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          -
     *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         -
@@ -181,6 +181,17 @@ public final class TsRange {
         return upper.isEqual(MINUS_INFINITY) || upper.isEqual(INFINITY);
     }
 
+    public boolean notExtendsLeftOf(final TsRange range) {
+       if (range == null) {
+           throw new IllegalArgumentException("range must not be null");
+       }
+        if (this.isEmpty() || range.isEmpty()) {
+            return true;
+        }
+        final int cmp = this.compareLower(range);
+        return cmp >= 0;
+    }
+
     public boolean notExtendsRightOf(final TsRange range) {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
@@ -188,7 +199,7 @@ public final class TsRange {
         if (this.isEmpty() || range.isEmpty()) {
             return true;
         }
-        final int cmpUpper = compareUpper(range);
+        final int cmpUpper = this.compareUpper(range);
         return cmpUpper <= 0;
     }
 
