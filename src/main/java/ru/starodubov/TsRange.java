@@ -181,6 +181,17 @@ public final class TsRange {
         return upper.isEqual(MINUS_INFINITY) || upper.isEqual(INFINITY);
     }
 
+    public boolean notExtendsRightOf(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        if (this.isEmpty() || range.isEmpty()) {
+            return true;
+        }
+        final int cmpUpper = compareUpper(range);
+        return cmpUpper <= 0;
+    }
+
     public boolean strictlyRightOf(final TsRange range) {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
