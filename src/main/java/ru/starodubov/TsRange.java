@@ -20,8 +20,8 @@ operator|  description                |  example                                
     &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               +
     -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               +
     +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          +
-    *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         -
-    -	difference	                    int8range(5,15) - int8range(10,20)	                            [5,10)          -
+    *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         +
+    -	difference	                    int8range(5,15) - int8range(10,20)	                            [5,10)          +
  **/
 
 public final class TsRange implements Comparable<TsRange> {
@@ -31,6 +31,8 @@ public final class TsRange implements Comparable<TsRange> {
     private final boolean upperInc;
     public final static LocalDateTime INFINITY = LocalDateTime.MAX;
     public final static LocalDateTime MINUS_INFINITY = LocalDateTime.MIN;
+    public final static TsRange EMPTY = TsRange.of(MINUS_INFINITY, MINUS_INFINITY, "()");
+
     public final static String DEFAULT_BOUNDS = "[)";
 
     TsRange(LocalDateTime lower, LocalDateTime upper, boolean lowerInc, boolean upperInc) {
@@ -40,14 +42,14 @@ public final class TsRange implements Comparable<TsRange> {
         this.upperInc = upperInc;
     }
 
-    public static TsRange of(final String lower, final String upper, final String bounds) {
+    static TsRange of(final String lower, final String upper, final String bounds) {
         final String l = lower.length() == 10 ? lower + "T00:00:00" : lower;
         final String u = upper.length() == 10 ? upper + "T00:00:00" : upper;
 
         return TsRange.of(LocalDateTime.parse(l), LocalDateTime.parse(u), bounds);
     }
 
-    public static TsRange of(final String lower, final String upper) {
+    static TsRange of(final String lower, final String upper) {
         final String l = lower.length() == 10 ? lower + "T00:00:00" : lower;
         final String u = upper.length() == 10 ? upper + "T00:00:00" : upper;
 
@@ -101,6 +103,77 @@ public final class TsRange implements Comparable<TsRange> {
 
     public LocalDateTime upper() {
         return upper;
+    }
+
+    public TsRange difference(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (range.isEmpty()) {
+            return this;
+        }
+        if (this.isEmpty()) {
+            return TsRange.EMPTY;
+        }
+
+        if (!this.overlaps(range)) {
+            return this;
+        }
+
+        if (this.isEqual(range)) {
+            return TsRange.EMPTY;
+        }
+
+        if (this.lessThan(range)) {
+            final int cmp = this.compareUpper(range);
+
+            if (cmp > 0) {
+                throw new UnsupportedOperationException(
+                        "result of range difference would not be contiguous. this: %s, range: %s"
+                                .formatted(this, range));
+            }
+
+            return TsRange.of(this.lower(), range.lower(), this.lowerInc(), !range.lowerInc());
+        }
+
+        final int cmp = range.compareUpper(this);
+
+        if (cmp >= 0) {
+            return TsRange.EMPTY;
+        }
+
+        return TsRange.of(range.upper(), this.upper(), !range.upperInc(), this.upperInc());
+    }
+
+    public TsRange intersection(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (this.isEmpty() || range.isEmpty()) {
+            return TsRange.EMPTY;
+        }
+
+        if (!this.overlaps(range)) {
+            return TsRange.EMPTY;
+        }
+
+        if (this.lessThan(range)) {
+            final int cmp = this.compareUpper(range);
+            if (cmp >= 0) {
+                return TsRange.of(range.lower(), range.upper(), range.lowerInc(), range.upperInc());
+            }
+            return TsRange.of(range.lower(), this.upper(), range.lowerInc(), this.upperInc());
+        }
+
+        final int cmp = range.compareUpper(this);
+
+        if (cmp >= 0) {
+            return TsRange.of(this.lower(), this.upper(), this.lowerInc(), this.upperInc());
+        }
+
+        return TsRange.of(this.lower(), range.upper(), this.lowerInc(), range.upperInc());
     }
 
     public TsRange union(final TsRange range) {
@@ -444,7 +517,7 @@ public final class TsRange implements Comparable<TsRange> {
         return range.lessThan(this);
     }
 
-    private int compareUpper(final TsRange range) {
+    public int compareUpper(final TsRange range) {
         final int cmp = comparePoints(upper, range.upper);
         if (cmp != 0) {
             return cmp;
@@ -453,7 +526,7 @@ public final class TsRange implements Comparable<TsRange> {
         return compareBounds(range.upperInc, upperInc);
     }
 
-    private int compareLower(final TsRange range) {
+    public int compareLower(final TsRange range) {
         final int cmp = comparePoints(lower, range.lower);
         if (cmp != 0) {
             return cmp;
@@ -464,7 +537,7 @@ public final class TsRange implements Comparable<TsRange> {
     /*
         сравнение границ
      */
-    private static int compareBounds(final boolean b1, final boolean b2) {
+    public static int compareBounds(final boolean b1, final boolean b2) {
         if (b1 && !b2) {
             return -1;
         }
@@ -487,7 +560,7 @@ public final class TsRange implements Comparable<TsRange> {
     /*
         сравнение временных точек
      */
-    private static int comparePoints(final LocalDateTime d1, final LocalDateTime d2) {
+    public static int comparePoints(final LocalDateTime d1, final LocalDateTime d2) {
         return d1.compareTo(d2);
     }
 
