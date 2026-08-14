@@ -18,13 +18,13 @@ operator|  description                |  example                                
     >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               +
     &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               +
     &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               +
-    -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               -
-    +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          -
+    -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               +
+    +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          +
     *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         -
     -	difference	                    int8range(5,15) - int8range(10,20)	                            [5,10)          -
  **/
 
-public final class TsRange {
+public final class TsRange implements Comparable<TsRange> {
     private final LocalDateTime lower;
     private final LocalDateTime upper;
     private final boolean lowerInc;
@@ -101,6 +101,40 @@ public final class TsRange {
 
     public LocalDateTime upper() {
         return upper;
+    }
+
+    public TsRange union(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (range.isEmpty()) {
+            return this;
+        }
+        if (this.isEmpty()) {
+            return range;
+        }
+
+        if (!(this.overlaps(range) || this.isAdjacentTo(range))) {
+            throw new UnsupportedOperationException("result of range union would not be contiguous. this: %s, range: %s"
+                    .formatted(this, range));
+        }
+
+        if (this.lessThan(range)) {
+            final int cmp = this.compareUpper(range);
+            if (cmp >= 0) {
+                return TsRange.of(this.lower(), this.upper(), this.lowerInc(), this.upperInc());
+            }
+            return TsRange.of(this.lower(), range.upper(), this.lowerInc(), range.upperInc());
+        }
+
+        final int cmp = range.compareUpper(this);
+
+        if (cmp >= 0) {
+            return TsRange.of(range.lower(), range.upper(), range.lowerInc(), range.upperInc());
+        }
+
+        return TsRange.of(range.lower(), this.upper(), range.lowerInc(), this.upperInc());
     }
 
     public boolean containsRange(final TsRange range) {
@@ -455,5 +489,18 @@ public final class TsRange {
      */
     private static int comparePoints(final LocalDateTime d1, final LocalDateTime d2) {
         return d1.compareTo(d2);
+    }
+
+    @Override
+    public int compareTo(TsRange range) {
+        if (this.lessThan(range)) {
+            return -1;
+        }
+
+        if (this.isEqual(range)) {
+            return 0;
+        }
+
+        return 1;
     }
 }
