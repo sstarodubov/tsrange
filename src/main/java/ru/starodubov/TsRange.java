@@ -14,10 +14,10 @@ operator|  description                |  example                                
     @>	contains element	            '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp	t               +
     <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               +
     &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               +
-    <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               -
-    >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               -
-    &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               -
-    &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               -
+    <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               +
+    >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               +
+    &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               +
+    &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               +
     -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               -
     +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          -
     *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         -
@@ -190,6 +190,29 @@ public final class TsRange {
         }
         final int cmp = this.compareLower(range);
         return cmp >= 0;
+    }
+
+    public boolean isAdjacentTo(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (this.isEmpty() || range.isEmpty()) {
+            return false;
+        }
+
+       final int cmpA = comparePoints(this.upper(), range.lower());
+       final int cmpB = comparePoints(this.lower(), range.upper());
+
+       if (cmpA == 0) {
+           return cmpB < 0 && ((!this.upperInc() && range.lowerInc()) || (this.upperInc() && !range.lowerInc()));
+       }
+
+        if (cmpB == 0) {
+            return cmpA > 0 && ((!this.lowerInc() && range.upperInc()) || (this.lowerInc() && !range.upperInc()));
+        }
+
+        return false;
     }
 
     public boolean notExtendsRightOf(final TsRange range) {
