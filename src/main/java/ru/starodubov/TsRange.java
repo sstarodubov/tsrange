@@ -181,6 +181,14 @@ public final class TsRange {
         return upper.isEqual(MINUS_INFINITY) || upper.isEqual(INFINITY);
     }
 
+    public boolean strictlyRightOf(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        return range.strictlyLeftOf(this);
+    }
+
     public boolean strictlyLeftOf(final TsRange range) {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
@@ -200,7 +208,6 @@ public final class TsRange {
         return false;
     }
 
-
     public boolean isEqual(final TsRange range) {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
@@ -218,7 +225,6 @@ public final class TsRange {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
         }
-
 
         return !this.lessThan(range);
     }
