@@ -2,6 +2,8 @@ package ru.starodubov;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.util.Objects;
+
 /**
  * Примеры из документации постгрес
 operator|  description                |  example                                                |   result          | impl status
@@ -355,7 +357,7 @@ public final class TsRange implements Comparable<TsRange> {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
         }
-        if (isEmpty() && range.isEmpty()) {
+        if (this.isEmpty() && range.isEmpty()) {
             return true;
         }
         return this.lower.isEqual(range.lower()) &&
@@ -568,4 +570,29 @@ public final class TsRange implements Comparable<TsRange> {
         return 1;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o instanceof TsRange range) {
+            return this.lower.isEqual(range.lower()) &&
+                this.upper.isEqual(range.upper()) &&
+                this.upperInc == range.upperInc() &&
+                this.lowerInc == range.lowerInc();
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lower, upper, lowerInc, upperInc);
+    }
+
+    @Override
+    public String toString() {
+        final String l = lower.toString();
+        final String u = upper.toString();
+        return (lowerInc ? "[" : "(") + "\"" + l + "\""+ "," + "\"" + u + "\""+ (upperInc ? "]" : ")");
+    }
 }

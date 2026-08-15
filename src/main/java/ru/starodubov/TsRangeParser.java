@@ -4,26 +4,17 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 
 public class TsRangeParser {
-
-    public static boolean parseLeftBound(final char bound) {
-        return switch (bound) {
-            case '(' -> false;
-            case '[' -> true;
-            default -> throw new UnsupportedOperationException("unknown bound: %s".formatted(bound));
-        };
-    }
-
-
-    public static boolean parseRightBound(final char bound) {
-        return switch (bound) {
-            case ')' -> false;
-            case ']' -> true;
-            default -> throw new UnsupportedOperationException("unknown bound: %s".formatted(bound));
-        };
-    }
     /*
-      range must have format "[\"2026-06-07 08:30:00.123457\",\"2026-06-07 09:45:00.789\"]"
-     */
+          TsRange должен иметь формат типа:
+                "[\"2026-06-07 08:30:00.123457\",\"2026-06-07 09:45:00.789\"]"
+                "[\"2026-06-07 08:30:00\",\"2026-06-07 09:45:00.789\"]"
+                "[\"2026-06-07\",\"2026-06-07 09:45:00.789\"]"
+                "[\"2026-06-07\",\"2026-06-07 09:45:00.789134\"]"
+
+          Метод не далает никакких валидаций.
+          Метод подразумевает что формат корректный.
+          Валидацию входного формата прописывать САМОСТОЯТЕЛЬНО.
+         */
     public static TsRange parseRange(final String range) {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
@@ -40,6 +31,23 @@ public class TsRangeParser {
         return TsRange.of(lower, upper, lowerInc, upperInc);
     }
 
+    static boolean parseLeftBound(final char bound) {
+        return switch (bound) {
+            case '(' -> false;
+            case '[' -> true;
+            default -> throw new UnsupportedOperationException("unknown bound: %s".formatted(bound));
+        };
+    }
+
+    static boolean parseRightBound(final char bound) {
+        return switch (bound) {
+            case ')' -> false;
+            case ']' -> true;
+            default -> throw new UnsupportedOperationException("unknown bound: %s".formatted(bound));
+        };
+    }
+
+
     /**
      * Парсит timestamp вида:
      * "2020-01-01 10:10:10.1"
@@ -51,17 +59,9 @@ public class TsRangeParser {
      * "2020-01-01
      *
      */
-    public static LocalDateTime parseTimestamp(final String timestamp, final int offset, final int len) {
+    static LocalDateTime parseTimestamp(final String timestamp, final int offset, final int len) {
         if (timestamp == null) {
             throw new IllegalArgumentException("timestamp must be not null");
-        }
-
-        if (len != 10 && len != 19 && (len < 21 || len > 26)) {
-            throw new DateTimeException("wrong timestamp format: %s, offset: %s, len: %s".formatted(timestamp, offset, len));
-        }
-
-        if (timestamp.charAt(4 + offset) != '-' || timestamp.charAt(7 + offset) != '-') {
-            throw new DateTimeException("wrong timestamp format: %s, offset: %s, len: %s".formatted(timestamp, offset, len));
         }
 
         final int year = fourDigits(timestamp, 0 + offset);
@@ -70,16 +70,6 @@ public class TsRangeParser {
 
         if (len == 10) {
             return LocalDateTime.of(year, month, day, 0, 0, 0);
-        }
-
-        if (len > 19 && timestamp.charAt(19 + offset) != '.') {
-            throw new DateTimeException("wrong timestamp format: %s, offset: %s, len: %s".formatted(timestamp, offset, len));
-        }
-
-        if (!(timestamp.charAt(10 + offset) == ' ' || timestamp.charAt(10 + offset) == 'T')
-                || timestamp.charAt(13 + offset) != ':'
-                || timestamp.charAt(16 + offset) != ':') {
-            throw new DateTimeException("wrong timestamp format: %s, offset: %s, len: %s".formatted(timestamp, offset, len));
         }
 
         final int hour = twoDigits(timestamp, 11 + offset);
@@ -92,9 +82,6 @@ public class TsRangeParser {
             final int fracDigits = len - 20;
             for (int i = 20 + offset; i < len + offset; ++i) {
                 final char c = timestamp.charAt(i);
-                if (c < '0' || c > '9') {
-                    throw new DateTimeException("wrong timestamp format: %s, offset: %s, len: %s".formatted(timestamp, offset, len));
-                }
                 nanoOfSecond = nanoOfSecond * 10 + (c - '0');
             }
 
@@ -112,13 +99,6 @@ public class TsRangeParser {
         final char c2 = s.charAt(i + 2);
         final char c3 = s.charAt(i + 3);
 
-        if (c0 < '0' || c0 > '9'
-                || c1 < '0' || c1 > '9'
-                || c2 < '0' || c2 > '9'
-                || c3 < '0' || c3 > '9') {
-            throw new DateTimeException("wrong timestamp format: %s, index: %d".formatted(s, i));
-        }
-
         return (c0 - '0') * 1000
                 + (c1 - '0') * 100
                 + (c2 - '0') * 10
@@ -128,10 +108,6 @@ public class TsRangeParser {
     private static int twoDigits(final String s, final int i) {
         final char c0 = s.charAt(i);
         final char c1 = s.charAt(i + 1);
-
-        if (c0 < '0' || c0 > '9' || c1 < '0' || c1 > '9') {
-            throw new DateTimeException("wrong timestamp format: %s, index: %d".formatted(s, i));
-        }
 
         return (c0 - '0') * 10 + (c1 - '0');
     }

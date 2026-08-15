@@ -1,4 +1,5 @@
 package ru.starodubov;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +27,7 @@ class ParserTest {
     @Test
     void testTsRangeParser3() {
         TsRange actual = TsRangeParser.parseRange("[\"2020-01-01 10:10:10.143\",\"2020-01-02 10:20:30.123456\")");
+        System.out.println(actual);
         assertEquals(LocalDateTime.parse("2020-01-01T10:10:10.143"), actual.lower());
         assertEquals(LocalDateTime.parse("2020-01-02T10:20:30.123456"), actual.upper());
         assertEquals(true, actual.lowerInc());
@@ -197,42 +199,5 @@ class ParserTest {
     @DisplayName("null возвращает null")
     void parsesNullAsNull() {
         assertThrows(IllegalArgumentException.class, () -> TsRangeParser.parseTimestamp(null, 0, 0));
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\" -> null")
-    @ValueSource(strings = {
-            "",
-            " ",
-            "2020-01-01 10:10:1",
-            "2020-01-01 10:10:10.",
-            "2020-01-01 10:10:10." + " ",
-            "2020-01-01 10:10:10.1" + " ",
-            "2020-01-01 10:10:10.1234567",
-            "2020-01-01 10:10:10.123456789",
-            "2020/01/01 10:10:10.1",
-            "2020-01-01 10.10:10.1",
-            "2020-01-01 10:10-10.1",
-            "2020-01-01 10:10:10x1",
-            "20a0-01-01 10:10:10.1",
-            "2020-0a-01 10:10:10.1",
-            "2020-01-0a 10:10:10.1",
-            "2020-01-01 1a:10:10.1",
-            "2020-01-01 10:1a:10.1",
-            "2020-01-01 10:10:1a.1",
-            "2020-01-01 10:10:10.a",
-            "2020-01-01 10:10:10.1a",
-            "2020-00-01 10:10:10.1",
-            "2020-13-01 10:10:10.1",
-            "2020-01-00 10:10:10.1",
-            "2020-01-32 10:10:10.1",
-            "2020-04-31 10:10:10.1",
-            "2020-01-01 24:00:00.1",
-            "2020-01-01 10:60:00.1",
-            "2020-01-01 10:10:60.1",
-            " " + "2020-01-01 10:10:10.1"
-    })
-    @DisplayName("Невалидные timestamp")
-    void rejectsInvalidTimestamps(String input) {
-        assertThrows(DateTimeException.class, () -> TsRangeParser.parseTimestamp(input, 0, input.length()));
     }
 }
