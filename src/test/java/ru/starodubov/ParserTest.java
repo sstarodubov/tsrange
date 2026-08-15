@@ -15,8 +15,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class ParserTest {
 
     @Test
+    void testTsRangeParser4() {
+        TsRange actual = TsRangeParser.parseRange("[\"2026-06-07 08:30:00.123457\",\"2026-06-07 09:45:00.789\"]");
+        assertEquals(LocalDateTime.parse("2026-06-07T08:30:00.123457"), actual.lower());
+        assertEquals(LocalDateTime.parse("2026-06-07T09:45:00.789"), actual.upper());
+        assertEquals(true, actual.lowerInc());
+        assertEquals(true, actual.upperInc());
+    }
+
+    @Test
     void testTsRangeParser3() {
-        TsRange actual = TsRange.parseRange("[2020-01-01 10:10:10.143,2020-01-02 10:20:30.123456)");
+        TsRange actual = TsRangeParser.parseRange("[\"2020-01-01 10:10:10.143\",\"2020-01-02 10:20:30.123456\")");
         assertEquals(LocalDateTime.parse("2020-01-01T10:10:10.143"), actual.lower());
         assertEquals(LocalDateTime.parse("2020-01-02T10:20:30.123456"), actual.upper());
         assertEquals(true, actual.lowerInc());
@@ -25,7 +34,7 @@ class ParserTest {
 
     @Test
     void testTsRangeParser2() {
-        TsRange actual = TsRange.parseRange("[2020-01-01 10:10:10.143,2020-01-02 10:20:30.12)");
+        TsRange actual = TsRangeParser.parseRange("[\"2020-01-01 10:10:10.143\",\"2020-01-02 10:20:30.12\")");
         assertEquals(LocalDateTime.parse("2020-01-01T10:10:10.143"), actual.lower());
         assertEquals(LocalDateTime.parse("2020-01-02T10:20:30.12"), actual.upper());
         assertEquals(true, actual.lowerInc());
@@ -34,7 +43,7 @@ class ParserTest {
 
     @Test
     void testTsRangeParser() {
-        TsRange actual = TsRange.parseRange("[2020-01-01 10:10:10,2020-01-02 10:20:30)");
+        TsRange actual = TsRangeParser.parseRange("[\"2020-01-01 10:10:10\",\"2020-01-02 10:20:30\")");
         assertEquals(LocalDateTime.parse("2020-01-01T10:10:10"), actual.lower());
         assertEquals(LocalDateTime.parse("2020-01-02T10:20:30"), actual.upper());
         assertEquals(true, actual.lowerInc());
@@ -46,83 +55,83 @@ class ParserTest {
         assertAll(
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.1"),
-                        TsRange.parseTimestamp("[[[2020-01-01 10:10:10.1,", 3, 21),
+                        TsRangeParser.parseTimestamp("[[[2020-01-01 10:10:10.1,", 3, 21),
                         "1 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.12"),
-                        TsRange.parseTimestamp("!!2020-01-01 10:10:10.12", 2, 22),
+                        TsRangeParser.parseTimestamp("!!2020-01-01 10:10:10.12", 2, 22),
                         "2 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.123"),
-                        TsRange.parseTimestamp("[2020-01-01 10:10:10.123,", 1, 23),
+                        TsRangeParser.parseTimestamp("[2020-01-01 10:10:10.123,", 1, 23),
                         "3 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.1234"),
-                        TsRange.parseTimestamp("eerer2020-01-01 10:10:10.1234]]]]", 5, 24),
+                        TsRangeParser.parseTimestamp("eerer2020-01-01 10:10:10.1234]]]]", 5, 24),
                         "4 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.12345"),
-                        TsRange.parseTimestamp("yyyy2020-01-01 10:10:10.12345!!!!", 4, 25),
+                        TsRangeParser.parseTimestamp("yyyy2020-01-01 10:10:10.12345!!!!", 4, 25),
                         "5 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.123456"),
-                        TsRange.parseTimestamp("rrrr2020-01-01 10:10:10.123456ggggg", 4, 26),
+                        TsRangeParser.parseTimestamp("rrrr2020-01-01 10:10:10.123456ggggg", 4, 26),
                         "6 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T00:00:00"),
-                        TsRange.parseTimestamp("[2020-01-01T00:00:00,]", 1, 19),
+                        TsRangeParser.parseTimestamp("[2020-01-01T00:00:00,]", 1, 19),
                         "7 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T00:00:00"),
-                        TsRange.parseTimestamp("[2020-01-01]", 1, 10),
+                        TsRangeParser.parseTimestamp("[2020-01-01]", 1, 10),
                         "8 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.12"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.12", 0, 22),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.12", 0, 22),
                         "9 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T00:00:00"),
-                        TsRange.parseTimestamp("2020-01-01", 0, 10),
+                        TsRangeParser.parseTimestamp("2020-01-01", 0, 10),
                         "10 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.1"),
-                        TsRange.parseTimestamp("2020-01-01T10:10:10.1", 0, 21),
+                        TsRangeParser.parseTimestamp("2020-01-01T10:10:10.1", 0, 21),
                         "11 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.1"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.1", 0, 21),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.1", 0, 21),
                         "12 test"
                 ),
 
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.123"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.123", 0, 23),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.123", 0, 23),
                         "13 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.1234"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.1234", 0, 24),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.1234", 0, 24),
                         "14 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.12345"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.12345", 0, 25),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.12345", 0, 25),
                         "15 test"
                 ),
                 () -> assertEquals(
                         LocalDateTime.parse("2020-01-01T10:10:10.123456"),
-                        TsRange.parseTimestamp("2020-01-01 10:10:10.123456", 0, 26),
+                        TsRangeParser.parseTimestamp("2020-01-01 10:10:10.123456", 0, 26),
                         "16 test"
                 )
         );
@@ -132,7 +141,7 @@ class ParserTest {
     @MethodSource("validTimestamps")
     @DisplayName("Дополнительные валидные timestamp")
     void parsesValidTimestamps(String input, LocalDateTime expected) {
-        assertEquals(expected, TsRange.parseTimestamp(input, 0, input.length()));
+        assertEquals(expected, TsRangeParser.parseTimestamp(input, 0, input.length()));
     }
 
     static Stream<Arguments> validTimestamps() {
@@ -187,7 +196,7 @@ class ParserTest {
     @Test
     @DisplayName("null возвращает null")
     void parsesNullAsNull() {
-        assertThrows(IllegalArgumentException.class, () -> TsRange.parseTimestamp(null, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> TsRangeParser.parseTimestamp(null, 0, 0));
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\" -> null")
@@ -224,6 +233,6 @@ class ParserTest {
     })
     @DisplayName("Невалидные timestamp")
     void rejectsInvalidTimestamps(String input) {
-        assertThrows(DateTimeException.class, () -> TsRange.parseTimestamp(input, 0, input.length()));
+        assertThrows(DateTimeException.class, () -> TsRangeParser.parseTimestamp(input, 0, input.length()));
     }
 }
