@@ -36,32 +36,54 @@ public final class TsMultiRange implements Iterable<TsRange> {
      */
 
     private static List<TsRange> normalize(final List<TsRange> ranges) {
-        final List<TsRange> sortedRanges = ranges.stream().sorted().collect(Collectors.toList());
-        final var resultList = new ArrayList<TsRange>(ranges.size());
-        TsRange last;
-        for (final TsRange r : sortedRanges) {
-            if (r.isEmpty()) {
+        final var normList = copyAndSort(ranges);
+        TsRange last, cur;
+        int wrIdx = 0; // индекс записи
+        for (int readIdx = 0; readIdx <  normList.size(); readIdx++) {
+            cur = normList.get(readIdx);
+            if (cur.isEmpty()) {
                 continue;
             }
-            if (resultList.isEmpty()) {
-                resultList.add(r);
+
+            if (wrIdx == 0) {
+                normList.set(wrIdx, cur);
+                wrIdx++;
             } else {
-                last = resultList.get(resultList.size() - 1);
-                if (last.overlaps(r) || last.isAdjacentTo(r)) {
-                    resultList.remove(resultList.size() - 1);
-                    resultList.add(last.merge(r));
+                last = normList.get(wrIdx - 1);
+                if (last.overlaps(cur) || last.isAdjacentTo(cur)) {
+                    wrIdx--; // удалили последний элемент
+                    normList.set(wrIdx, last.merge(cur)); // на его место зависали смерженный отрезок
                 } else {
-                    resultList.add(r);
+                    normList.set(wrIdx, cur);
                 }
+                wrIdx++;
             }
         }
 
-        return Collections.unmodifiableList(resultList);
+        shrink(normList, wrIdx); //выравнимаем размер массива по индексу записи
+
+        return Collections.unmodifiableList(normList);
     }
 
     public boolean isEmpty() {
         return this.ranges.isEmpty();
     }
+
+    static List<TsRange> copyAndSort(final List<TsRange> ranges) {
+        final var result = new ArrayList<TsRange>(ranges.size());
+        for (var r : ranges) {
+            result.add(r);
+        }
+        Collections.sort(result);
+        return result;
+    }
+
+    static void shrink(List<TsRange> list, int idx) {
+        if (idx < list.size()) {
+            list.subList(idx, list.size()).clear();
+        }
+    }
+
 
     @Override
     public Iterator<TsRange> iterator() {
