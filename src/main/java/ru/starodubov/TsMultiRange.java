@@ -35,17 +35,11 @@ public final class TsMultiRange implements Iterable<TsRange> {
         if (this.isEmpty()) {
             return TsRange.EMPTY;
         }
-
-        LocalDateTime upper = this.getFirst().upper();
-        boolean upperInc = this.getFirst().upperInc();
-
-        for (final var r : this.ranges) {
-            if (TsRange.compareUpperEndpoints(r.upper(), upper, r.upperInc(), upperInc) > 0) {
-               upper = r.upper();
-               upperInc = r.upperInc();
-            }
+        if (this.size() == 1) {
+            return this.getFirst();
         }
-        return TsRange.of(this.getFirst().lower(), upper, this.getFirst().lowerInc(), upperInc);
+
+        return TsRange.of(this.getFirst().lower(), this.getLast().upper(), this.getFirst().lowerInc(), this.getLast().upperInc());
     }
     /*
     PostgreSQL хранит мультисписки в каноническом (нормализованном) виде.

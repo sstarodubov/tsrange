@@ -273,11 +273,11 @@ public final class TsRange implements Comparable<TsRange> {
     }
 
     public boolean lowerInf() {
-        return lower.isEqual(MINUS_INFINITY) || lower.isEqual(INFINITY);
+        return this.lower.isEqual(MINUS_INFINITY) || this.lower.isEqual(INFINITY);
     }
 
     public boolean upperInf() {
-        return upper.isEqual(MINUS_INFINITY) || upper.isEqual(INFINITY);
+        return this.upper.isEqual(MINUS_INFINITY) || this.upper.isEqual(INFINITY);
     }
 
     public boolean notExtendsLeftOf(final TsRange range) {
