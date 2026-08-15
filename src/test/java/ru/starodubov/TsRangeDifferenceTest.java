@@ -130,8 +130,8 @@ public class TsRangeDifferenceTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-31", "[)");
             TsRange r2 = TsRange.of("2026-01-10", "2026-01-20", "[)");
 
-            UnsupportedOperationException ex = assertThrows(
-                    UnsupportedOperationException.class,
+            IllegalArgumentException ex = assertThrows(
+                    IllegalArgumentException.class,
                     () -> r1.difference(r2)
             );
 
@@ -148,7 +148,7 @@ public class TsRangeDifferenceTest {
             );
             TsRange r2 = TsRange.of("2026-01-10", "2026-01-20", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.difference(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.difference(r2));
         }
     }
 
@@ -314,7 +314,7 @@ public class TsRangeDifferenceTest {
             );
             TsRange r2 = TsRange.of("2026-01-10", "2026-01-20", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.difference(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.difference(r2));
         }
 
         @Test
@@ -351,7 +351,7 @@ public class TsRangeDifferenceTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-31", "[)");
             TsRange point = TsRange.of("2026-01-15", "2026-01-15", "[]");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.difference(point));
+            assertThrows(IllegalArgumentException.class, () -> r1.difference(point));
         }
 
         @Test
@@ -557,7 +557,7 @@ public class TsRangeDifferenceTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-31", "[)");
             TsRange r2 = TsRange.of("2026-01-10", "2026-01-20", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.difference(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.difference(r2));
         }
     }
 

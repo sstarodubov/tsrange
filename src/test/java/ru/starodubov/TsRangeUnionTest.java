@@ -203,7 +203,7 @@ public class TsRangeUnionTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-10", "[)");
             TsRange r2 = TsRange.of("2026-01-15", "2026-01-20", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r2));
         }
 
         @Test
@@ -212,7 +212,7 @@ public class TsRangeUnionTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-10", "[)");
             TsRange r2 = TsRange.of("2026-06-01", "2026-06-10", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r2));
         }
 
         @Test
@@ -229,7 +229,7 @@ public class TsRangeUnionTest {
                     "[)"
             );
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r2));
         }
 
         @Test
@@ -239,7 +239,7 @@ public class TsRangeUnionTest {
             TsRange r1 = TsRange.of("2026-01-01", "2026-01-10", "[)");
             TsRange r2 = TsRange.of("2026-01-10", "2026-01-20", "()");
 
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r2));
         }
 
         @Test
@@ -412,7 +412,7 @@ public class TsRangeUnionTest {
             TsRange single = TsRange.of("2026-01-15", "2026-01-15", "[]");
             TsRange range = TsRange.of("2026-01-01", "2026-01-10", "[)");
 
-            assertThrows(UnsupportedOperationException.class, () -> single.union(range));
+            assertThrows(IllegalArgumentException.class, () -> single.union(range));
         }
     }
 
@@ -468,7 +468,7 @@ public class TsRangeUnionTest {
             TsRange r2 = TsRange.of("2026-01-15", "2026-01-20", "[)");
 
             // union бросает исключение
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r2));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r2));
 
             // merge заполняет разрыв
             TsRange mergeResult = r1.merge(r2);
@@ -495,7 +495,7 @@ public class TsRangeUnionTest {
             // r1 и r4 разнесены
             assertFalse(r1.overlaps(r4));
             assertFalse(r1.isAdjacentTo(r4));
-            assertThrows(UnsupportedOperationException.class, () -> r1.union(r4));
+            assertThrows(IllegalArgumentException.class, () -> r1.union(r4));
         }
     }
 

@@ -1432,7 +1432,7 @@ public class TsRangeCmpTest {
         @ValueSource(strings = {"(", ")", "[", "]", "", "[[]", "(])"})
         @DisplayName("Исключение при неверных bounds")
         void invalidBoundsThrowsException(String bounds) {
-            assertThrows(UnsupportedOperationException.class, () ->
+            assertThrows(IllegalArgumentException.class, () ->
                     TsRange.of(
                             LocalDateTime.of(2026, 1, 1, 0, 0),
                             LocalDateTime.of(2026, 1, 5, 0, 0),

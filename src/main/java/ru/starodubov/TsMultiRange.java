@@ -29,6 +29,49 @@ public final class TsMultiRange implements Iterable<TsRange> {
     }
 
     /*
+    anymultirange @> anyrange → boolean
+    Мультидиапазон содержит заданный диапазон?
+            '{[2,4)}'::int4multirange @> int4range(2,3) → t
+     */
+    public boolean containsRange(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (range.isEmpty()) {
+            return true;
+        }
+
+        if (this.isEmpty()) {
+            return false;
+        }
+
+        // Бинарный поиск: ищем элемент, который может содержать range
+        int lo = 0;
+        int hi = this.size() - 1;
+        int mid;
+        TsRange element;
+        while (lo <= hi) {
+            mid = (lo + hi) >>> 1;
+            element = this.get(mid);
+
+            if (element.containsRange(range)) {
+                return true;
+            }
+
+            if (element.lessThan(range)) {
+                // Элемент "левее" range, ищем правее
+                lo = mid + 1;
+            } else {
+                // Элемент "правее" или равен, ищем левее
+                hi = mid - 1;
+            }
+        }
+
+        return false;
+    }
+
+    /*
     anymultirange @> anymultirange → boolean
     Первый мультидиапазон содержит второй?
             '{[2,4)}'::int4multirange @> '{[2,3)}'::int4multirange → t
