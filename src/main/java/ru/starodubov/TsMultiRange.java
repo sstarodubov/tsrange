@@ -39,7 +39,8 @@ public final class TsMultiRange implements Iterable<TsRange> {
             return this.getFirst();
         }
 
-        return TsRange.of(this.getFirst().lower(), this.getLast().upper(), this.getFirst().lowerInc(), this.getLast().upperInc());
+        return TsRange.of(this.getFirst().lower(), this.getLast().upper(),
+                this.getFirst().lowerInc(), this.getLast().upperInc());
     }
     /*
     PostgreSQL хранит мультисписки в каноническом (нормализованном) виде.
@@ -97,6 +98,49 @@ public final class TsMultiRange implements Iterable<TsRange> {
         if (idx < list.size()) {
             list.subList(idx, list.size()).clear();
         }
+    }
+
+    public LocalDateTime lower() {
+        if (this.isEmpty()) {
+            return null;
+        }
+        return this.getFirst().lower();
+    }
+
+    public LocalDateTime upper() {
+        if (this.isEmpty()) {
+            return null;
+        }
+        return this.getLast().upper();
+    }
+
+    public boolean lowerInc() {
+        if (this.isEmpty()) {
+            return false;
+        }
+        return this.getFirst().lowerInc();
+    }
+
+
+    public boolean upperInc() {
+        if (this.isEmpty()) {
+            return false;
+        }
+        return this.getLast().upperInc();
+    }
+
+    public boolean lowerInf() {
+        if (this.isEmpty()) {
+            return false;
+        }
+        return this.getFirst().lowerInf();
+    }
+
+    public boolean upperInf() {
+        if (this.isEmpty()) {
+            return false;
+        }
+        return this.getLast().upperInf();
     }
 
     @Override
