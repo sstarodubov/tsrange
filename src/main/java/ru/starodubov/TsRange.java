@@ -72,7 +72,7 @@ public final class TsRange implements Comparable<TsRange> {
 
     public static TsRange of(LocalDateTime lower, LocalDateTime upper, String bounds) {
         if (bounds == null || bounds.length() != 2) {
-            throw new UnsupportedOperationException("unknown bounds expression");
+            throw new IllegalArgumentException("unknown bounds expression");
         }
 
         final boolean lowerInc = TsRangeParser.parseLeftBound(bounds.charAt(0));
@@ -121,7 +121,7 @@ public final class TsRange implements Comparable<TsRange> {
             final int cmp = this.compareUpper(range);
 
             if (cmp > 0) {
-                throw new UnsupportedOperationException(
+                throw new IllegalArgumentException(
                         "result of range difference would not be contiguous. this: %s, range: %s"
                                 .formatted(this, range));
             }
@@ -181,7 +181,7 @@ public final class TsRange implements Comparable<TsRange> {
         }
 
         if (!(this.overlaps(range) || this.isAdjacentTo(range))) {
-            throw new UnsupportedOperationException("result of range union would not be contiguous. this: %s, range: %s"
+            throw new IllegalArgumentException("result of range union would not be contiguous. this: %s, range: %s"
                     .formatted(this, range));
         }
 

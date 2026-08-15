@@ -2,9 +2,10 @@ package ru.starodubov;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
+/*
+   https://postgrespro.ru/docs/postgrespro/current/functions-range
+ */
 public final class TsMultiRange implements Iterable<TsRange> {
 
     private final List<TsRange> ranges;
@@ -25,6 +26,49 @@ public final class TsMultiRange implements Iterable<TsRange> {
             throw new IllegalArgumentException("ranges must not be null");
         }
         return new TsMultiRange(normalize(ranges));
+    }
+
+    /*
+    anymultirange @> anymultirange → boolean
+    Первый мультидиапазон содержит второй?
+            '{[2,4)}'::int4multirange @> '{[2,3)}'::int4multirange → t
+     */
+
+    public boolean containsMultirange(final TsMultiRange mrange) {
+       if (mrange == null) {
+           throw new IllegalArgumentException("range must not be null");
+       }
+
+        if (mrange.isEmpty()) {
+            return true;
+        }
+
+        if (this.isEmpty()) {
+            return false;
+        }
+
+        int thisIdx = 0; // указатель на this.ranges
+        int mrangeIdx = 0; // указатель на mrange.ranges
+        TsRange target;
+        while (mrangeIdx < mrange.size()) {
+            target = mrange.get(mrangeIdx);
+
+            while (thisIdx < this.size() && this.get(thisIdx).strictlyLeftOf(target)) {
+                thisIdx++;
+            }
+
+            if (thisIdx >= this.size()) {
+                return false;
+            }
+
+            if (!this.get(thisIdx).containsRange(target)) {
+                return false;
+            }
+
+            mrangeIdx++;
+        }
+
+        return true;
     }
 
     /*
