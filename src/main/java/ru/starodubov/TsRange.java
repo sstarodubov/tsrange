@@ -1,6 +1,5 @@
 package ru.starodubov;
 
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -235,11 +234,11 @@ public final class TsRange implements Comparable<TsRange> {
             return false;
         }
 
-        final int cmpLower = comparePoints(element, this.lower);
+        final int cmpLower = compareDateTime(element, this.lower);
         if (cmpLower < 0) {
             return false;
         }
-        final int cmpUpper = comparePoints(element, this.upper);
+        final int cmpUpper = compareDateTime(element, this.upper);
         if (cmpUpper > 0) {
             return false;
         }
@@ -286,7 +285,7 @@ public final class TsRange implements Comparable<TsRange> {
            throw new IllegalArgumentException("range must not be null");
        }
         if (this.isEmpty() || range.isEmpty()) {
-            return true;
+            return false;
         }
         final int cmp = this.compareLower(range);
         return cmp >= 0;
@@ -301,8 +300,8 @@ public final class TsRange implements Comparable<TsRange> {
             return false;
         }
 
-       final int cmpA = comparePoints(this.upper(), range.lower());
-       final int cmpB = comparePoints(this.lower(), range.upper());
+       final int cmpA = compareDateTime(this.upper(), range.lower());
+       final int cmpB = compareDateTime(this.lower(), range.upper());
 
        if (cmpA == 0) {
            return cmpB < 0 && ((!this.upperInc() && range.lowerInc()) || (this.upperInc() && !range.lowerInc()));
@@ -320,7 +319,7 @@ public final class TsRange implements Comparable<TsRange> {
             throw new IllegalArgumentException("range must not be null");
         }
         if (this.isEmpty() || range.isEmpty()) {
-            return true;
+            return false;
         }
         final int cmpUpper = this.compareUpper(range);
         return cmpUpper <= 0;
@@ -331,6 +330,10 @@ public final class TsRange implements Comparable<TsRange> {
             throw new IllegalArgumentException("range must not be null");
         }
 
+        if (range.isEmpty() || this.isEmpty()) {
+            return false;
+        }
+
         return range.strictlyLeftOf(this);
     }
 
@@ -339,7 +342,7 @@ public final class TsRange implements Comparable<TsRange> {
             throw new IllegalArgumentException("range must not be null");
         }
         if (range.isEmpty() || this.isEmpty()) {
-            return true;
+            return false;
         }
 
         if (this.overlaps(range)) {
@@ -428,7 +431,7 @@ public final class TsRange implements Comparable<TsRange> {
         }
 
         if (this.lessThan(range)) {
-            final int cmp = comparePoints(this.upper(), range.lower());
+            final int cmp = compareDateTime(this.upper(), range.lower());
             if (cmp > 0) {
                 return true;
             } else if (cmp < 0) {
@@ -438,7 +441,7 @@ public final class TsRange implements Comparable<TsRange> {
             }
         }
 
-        final int cmp = comparePoints(this.lower(), range.upper());
+        final int cmp = compareDateTime(this.lower(), range.upper());
         if (cmp > 0) {
            return false;
         } else if (cmp < 0) {
@@ -463,7 +466,7 @@ public final class TsRange implements Comparable<TsRange> {
         }
 
         if (this.lessThan(range)) {
-            final int cmp = comparePoints(upper, range.upper());
+            final int cmp = compareDateTime(upper, range.upper());
             if (cmp == 0) {
                 return TsRange.of(lower, upper, lowerInc, upperInc || range.upperInc());
             }
@@ -475,7 +478,7 @@ public final class TsRange implements Comparable<TsRange> {
         }
 
         // greaterThan or equal
-        final int cmp = comparePoints(upper, range.upper());
+        final int cmp = compareDateTime(upper, range.upper());
         if (cmp == 0) {
             return TsRange.of(range.lower(), range.upper(), range.lowerInc(), range.upperInc() || upperInc);
         }
@@ -511,20 +514,32 @@ public final class TsRange implements Comparable<TsRange> {
     }
 
     public int compareUpper(final TsRange range) {
-        final int cmp = comparePoints(upper, range.upper);
-        if (cmp != 0) {
-            return cmp;
-        }
-        //сравниваем инверисонно
-        return compareBounds(range.upperInc, upperInc);
+        return compareUpperEndpoints(this.upper, range.upper, this.upperInc, range.upperInc);
     }
 
     public int compareLower(final TsRange range) {
-        final int cmp = comparePoints(lower, range.lower);
+        return compareLowerEndpoints(this.lower, range.lower, this.lowerInc, range.lowerInc);
+    }
+
+    public static int compareLowerEndpoints(final LocalDateTime datetime1,final LocalDateTime datetime2,
+                                            final boolean bound1, final boolean bound2) {
+        final int cmp = compareDateTime(datetime1, datetime2);
         if (cmp != 0) {
             return cmp;
         }
-        return compareBounds(lowerInc, range.lowerInc);
+        return compareBounds(bound1, bound2);
+    }
+
+
+    public static int compareUpperEndpoints(final LocalDateTime datetime1, final LocalDateTime datetime2,
+                                            final boolean bound1, final boolean bound2) {
+        final int cmp = compareDateTime(datetime1, datetime2);
+        if (cmp != 0) {
+            return cmp;
+        }
+
+        //сравниваем инверисонно
+        return compareBounds(bound2, bound1);
     }
 
     /*
@@ -553,7 +568,7 @@ public final class TsRange implements Comparable<TsRange> {
     /*
         сравнение временных точек
      */
-    public static int comparePoints(final LocalDateTime d1, final LocalDateTime d2) {
+    public static int compareDateTime(final LocalDateTime d1, final LocalDateTime d2) {
         return d1.compareTo(d2);
     }
 

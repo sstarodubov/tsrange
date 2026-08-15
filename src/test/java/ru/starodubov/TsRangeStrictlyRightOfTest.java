@@ -176,12 +176,11 @@ public class TsRangeStrictlyRightOfTest {
     class EmptyRangeTests {
 
         @Test
-        @DisplayName("Пустой диапазон строго справа от непустого — true")
         void emptyStrictlyRightOfNonEmpty() {
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
 
-            assertTrue(empty.strictlyRightOf(nonEmpty));
+            assertFalse(empty.strictlyRightOf(nonEmpty));
         }
 
         @Test
@@ -190,7 +189,7 @@ public class TsRangeStrictlyRightOfTest {
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
 
-            assertTrue(nonEmpty.strictlyRightOf(empty));
+            assertFalse(nonEmpty.strictlyRightOf(empty));
         }
 
         @Test
@@ -199,8 +198,8 @@ public class TsRangeStrictlyRightOfTest {
             TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
 
-            assertTrue(empty1.strictlyRightOf(empty2));
-            assertTrue(empty2.strictlyRightOf(empty1));
+            assertFalse(empty1.strictlyRightOf(empty2));
+            assertFalse(empty2.strictlyRightOf(empty1));
         }
     }
 

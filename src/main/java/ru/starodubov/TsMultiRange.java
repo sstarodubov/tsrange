@@ -1,5 +1,6 @@
 package ru.starodubov;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -26,6 +27,26 @@ public final class TsMultiRange implements Iterable<TsRange> {
         return new TsMultiRange(normalize(ranges));
     }
 
+    /*
+      range_merge принимает мультисписок и возвращает один минимальный диапазон,
+      который покрывает все элементы мультисписка. По сути — «выпуклая оболочка» (convex hull) всех диапазонов.
+     */
+    public TsRange merge() {
+        if (this.isEmpty()) {
+            return TsRange.EMPTY;
+        }
+
+        LocalDateTime upper = this.getFirst().upper();
+        boolean upperInc = this.getFirst().upperInc();
+
+        for (final var r : this.ranges) {
+            if (TsRange.compareUpperEndpoints(r.upper(), upper, r.upperInc(), upperInc) > 0) {
+               upper = r.upper();
+               upperInc = r.upperInc();
+            }
+        }
+        return TsRange.of(this.getFirst().lower(), upper, this.getFirst().lowerInc(), upperInc);
+    }
     /*
     PostgreSQL хранит мультисписки в каноническом (нормализованном) виде.
     Это означает, что при создании или изменении tsmultirange СУБД автоматически применяет три правила:
@@ -83,7 +104,6 @@ public final class TsMultiRange implements Iterable<TsRange> {
             list.subList(idx, list.size()).clear();
         }
     }
-
 
     @Override
     public Iterator<TsRange> iterator() {

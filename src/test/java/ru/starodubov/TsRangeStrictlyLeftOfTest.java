@@ -176,21 +176,19 @@ public class TsRangeStrictlyLeftOfTest {
     class EmptyRangeTests {
 
         @Test
-        @DisplayName("Пустой диапазон строго слева от непустого — true")
         void emptyStrictlyLeftOfNonEmpty() {
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
 
-            assertTrue(empty.strictlyLeftOf(nonEmpty));
+            assertFalse(empty.strictlyLeftOf(nonEmpty));
         }
 
         @Test
-        @DisplayName("Непустой диапазон строго слева от пустого — true")
         void nonEmptyStrictlyLeftOfEmpty() {
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
 
-            assertTrue(nonEmpty.strictlyLeftOf(empty));
+            assertFalse(nonEmpty.strictlyLeftOf(empty));
         }
 
         @Test
@@ -199,8 +197,8 @@ public class TsRangeStrictlyLeftOfTest {
             TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
 
-            assertTrue(empty1.strictlyLeftOf(empty2));
-            assertTrue(empty2.strictlyLeftOf(empty1));
+            assertFalse(empty1.strictlyLeftOf(empty2));
+            assertFalse(empty2.strictlyLeftOf(empty1));
         }
     }
 

@@ -206,31 +206,28 @@ public class TsRangeNotExtendsRightOfTest {
     class EmptyRangeTests {
 
         @Test
-        @DisplayName("Пустой диапазон не выходит за правую границу непустого — true")
         void emptyNotExtendsRightOfNonEmpty() {
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
 
-            assertTrue(empty.notExtendsRightOf(nonEmpty));
+            assertFalse(empty.notExtendsRightOf(nonEmpty));
         }
 
         @Test
-        @DisplayName("Непустой диапазон не выходит за правую границу пустого — true")
         void nonEmptyNotExtendsRightOfEmpty() {
             TsRange nonEmpty = TsRange.of("2026-01-05", "2026-01-10", "[)");
             TsRange empty = TsRange.of("2026-01-01", "2026-01-01", "[)");
 
-            assertTrue(nonEmpty.notExtendsRightOf(empty));
+            assertFalse(nonEmpty.notExtendsRightOf(empty));
         }
 
         @Test
-        @DisplayName("Пустой диапазон не выходит за правую границу пустого — true")
         void emptyNotExtendsRightOfEmpty() {
             TsRange empty1 = TsRange.of("2026-01-01", "2026-01-01", "[)");
             TsRange empty2 = TsRange.of("2026-12-31", "2026-12-31", "()");
 
-            assertTrue(empty1.notExtendsRightOf(empty2));
-            assertTrue(empty2.notExtendsRightOf(empty1));
+            assertFalse(empty1.notExtendsRightOf(empty2));
+            assertFalse(empty2.notExtendsRightOf(empty1));
         }
     }
 
