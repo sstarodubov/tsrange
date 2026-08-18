@@ -23,7 +23,7 @@ jmh {
     // Benchmark mode: average time
     benchmarkMode = ['avgt']
     // Output unit
-    timeUnit = 'ns'
+    //timeUnit = 'ns'
 
     // Short iteration settings for a quick example
     //warmupIterations = 2
@@ -40,6 +40,7 @@ jmh {
 }
 
 dependencies {
+    implementation("com.google.guava:guava:33.7.0-jre")
     jmh "org.openjdk.jmh:jmh-core:${jmhLibVersion}"
     jmhAnnotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhLibVersion}"
 

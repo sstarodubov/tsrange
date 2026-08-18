@@ -447,71 +447,100 @@ public final class TsMultiRange implements Iterable<TsRange> {
         if (other == null) {
             throw new IllegalArgumentException("other must not be null");
         }
-
-        if (this.isEmpty()) {
-            return this;
-        }
-        if (other.isEmpty()) {
+        if (this.isEmpty() || other.isEmpty()) {
             return this;
         }
 
+        // Выделяем память только один раз под финальный результат
         final List<TsRange> result = new ArrayList<>();
-        int j = 0; // указатель на other.ranges
+        int j = 0; // указатель на other.ranges (никогда не сбрасывается, сложность O(N + M))
+        int otherSize = other.size();
 
         for (int i = 0; i < this.size(); i++) {
-            TsRange current = this.get(i);
+            TsRange rangeA = this.get(i);
 
-            List<TsRange> pieces = new ArrayList<>();
-            pieces.add(current);
-
-            while (j < other.size() && other.get(j).strictlyLeftOf(current)) {
+            // 1. Быстро пропускаем диапазоны в other, которые заведомо левее текущего rangeA
+            while (j < otherSize && other.get(j).strictlyLeftOf(rangeA)) {
                 j++;
             }
 
-            int k = j;
-            while (k < other.size() && !other.get(k).strictlyRightOf(current)) {
-                final TsRange b = other.get(k);
+            // 2. Отслеживаем эффективное начало оставшейся (невычтенной) части диапазона A
+            LocalDateTime currentStart = rangeA.lower();
+            boolean currentStartInc = rangeA.lowerInc();
+            boolean finishedA = false;
 
-                final List<TsRange> nextPieces = new ArrayList<>();
-                for (TsRange piece : pieces) {
-                    nextPieces.addAll(subtractSingle(piece, b));
+            // 3. Проверяем пересечения, начиная с индекса j
+            int k = j;
+            while (k < otherSize) {
+                TsRange rangeB = other.get(k);
+
+                // Если rangeB строго правее исходного rangeA, он не может пересекаться
+                // ни с rangeA, ни с любой его оставшейся частью.
+                if (rangeB.strictlyRightOf(rangeA)) {
+                    break;
                 }
-                pieces = nextPieces;
+
+                // Если rangeB строго левее текущей оставшейся части A, он её не затрагивает.
+                // (В other могут быть мелкие непересекающиеся диапазоны между основными)
+                if (isStrictlyBefore(rangeB.upper(), rangeB.upperInc(), currentStart, currentStartInc)) {
+                    k++;
+                    continue;
+                }
+
+                // --- ЗДЕСЬ ЕСТЬ ПЕРЕСЕЧЕНИЕ rangeB с текущим активным сегментом ---
+
+                // Шаг А: Сохраняем левый "хвост" диапазона A, если он есть
+                // (от currentStart до начала rangeB)
+                if (isStrictlyBefore(currentStart, currentStartInc, rangeB.lower(), rangeB.lowerInc())) {
+                    result.add(TsRange.of(currentStart, rangeB.lower(), currentStartInc, !rangeB.lowerInc()));
+                }
+
+                // Шаг Б: "Сдвигаем" начало оставшейся части A за пределы rangeB
+                currentStart = rangeB.upper();
+                currentStartInc = !rangeB.upperInc();
+
+                // Шаг В: Проверяем, не "съел" ли rangeB весь оставшийся диапазон A
+                if (!isValidInterval(currentStart, currentStartInc, rangeA.upper(), rangeA.upperInc())) {
+                    finishedA = true;
+                    break;
+                }
+
                 k++;
             }
 
-            result.addAll(pieces);
+            // 4. Если после всех вычитаний от диапазона A что-то осталось, добавляем это в результат
+            if (!finishedA && isValidInterval(currentStart, currentStartInc, rangeA.upper(), rangeA.upperInc())) {
+                // Микро-оптимизация: если границы не менялись, добавляем исходный объект без создания нового
+                if (currentStart.equals(rangeA.lower()) && currentStartInc == rangeA.lowerInc()) {
+                    result.add(rangeA);
+                } else {
+                    result.add(TsRange.of(currentStart, rangeA.upper(), currentStartInc, rangeA.upperInc()));
+                }
+            }
         }
 
         return new TsMultiRange(result);
     }
 
     /**
-     * Вычитает диапазон b из диапазона a.
-     * Возвращает список из 0, 1 или 2 диапазонов.
+     * Проверяет, что граница (v1, inc1) строго левее границы (v2, inc2).
+     * Полностью эквивалентно TsRange.compareLowerEndpoints(v1, v2, inc1, inc2) < 0,
+     * но работает с сырыми значениями без создания объектов.
      */
-    private List<TsRange> subtractSingle(TsRange a, TsRange b) {
-        if (!a.overlaps(b)) {
-            return List.of(a);
-        }
+    private static boolean isStrictlyBefore(LocalDateTime v1, boolean inc1, LocalDateTime v2, boolean inc2) {
+        return TsRange.compareLowerEndpoints(v1, v2, inc1, inc2) < 0;
+    }
 
-        if (b.containsRange(a)) {
-            return Collections.emptyList();
-        }
-
-        List<TsRange> res = new ArrayList<>(2);
-
-        // a начинается левее b
-        if (a.compareLower(b) < 0) {
-            res.add(TsRange.of(a.lower(), b.lower(), a.lowerInc(), !b.lowerInc()));
-        }
-
-        // a заканчивается правее b
-        if (a.compareUpper(b) > 0) {
-            res.add(TsRange.of(b.upper(), a.upper(), !b.upperInc(), a.upperInc()));
-        }
-
-        return res;
+    /**
+     * Проверяет, что интервал от (start, startInc) до (end, endInc) не является пустым.
+     * Логика в точности повторяет отрицание TsRange.isEmpty().
+     */
+    private static boolean isValidInterval(LocalDateTime start, boolean startInc, LocalDateTime end, boolean endInc) {
+        int cmp = TsRange.compareLowerEndpoints(start, end, startInc, endInc);
+        if (cmp < 0) return true;       // start строго левее end
+        if (cmp > 0) return false;      // start строго правее end
+        // cmp == 0: интервал из одной точки валиден только если обе границы включительные
+        return startInc && endInc;
     }
 
     /*
