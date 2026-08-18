@@ -4,26 +4,26 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Примеры из документации постгрес
-operator|  description                |  example                                                |   result          | impl status
-    =	is equal	                    int4range(1,5) = '[1,4]'::int4range	                            t               +
-    <>	not equal	                    numrange(1.1,2.2) <> numrange(1.1,2.3)	                        t               +
-    <	less than	                    int4range(1,10) < int4range(2,3)	                            t               +
-    >	greater than	                int4range(1,10) > int4range(1,5)	                            t               +
-    <=	less than or equal	            numrange(1.1,2.2) <= numrange(1.1,2.2)	                        t               +
-    >=	greater than or equal	        numrange(1.1,2.2) >= numrange(1.1,2.0)	                        t               +
-    @>	contains range	                int4range(2,4) @> int4range(2,3)	                            t               +
-    @>	contains element	            '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp	t               +
-    <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               +
-    &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               +
-    <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               +
-    >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               +
-    &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               +
-    &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               +
-    -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               +
-    +	union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          +
-    *	intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         +
-    -	difference	                    int8range(5,15) - int8range(10,20)	                            [5,10)          +
+  Примеры из документации постгрес
+  operator|  description                |  example                                                |   result          | impl status
+  =	    is equal	                    int4range(1,5) = '[1,4]'::int4range	                            t               +
+  <>	not equal	                    numrange(1.1,2.2) <> numrange(1.1,2.3)	                        t               +
+  <	    less than	                    int4range(1,10) < int4range(2,3)	                            t               +
+  >	    greater than	                int4range(1,10) > int4range(1,5)	                            t               +
+  <=	less than or equal	            numrange(1.1,2.2) <= numrange(1.1,2.2)	                        t               +
+  >=	greater than or equal	        numrange(1.1,2.2) >= numrange(1.1,2.0)	                        t               +
+  @>    contains range	                int4range(2,4) @> int4range(2,3)	                            t               +
+  @>    contains element	            '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp	t               +
+  <@	range is contained by	        int4range(2,4) <@ int4range(1,7)	                            t               +
+  &&	overlap 	                    int8range(3,7) && int8range(4,12)	                            t               +
+  <<	strictly left of	            int8range(1,10) << int8range(100,110)	                        t               +
+  >>	strictly right of	            int8range(50,60) >> int8range(20,30)	                        t               +
+  &<	not extend to the right of	    int8range(1,20) &< int8range(18,20)	                            t               +
+  &>	not extend to the left of	    int8range(7,20) &> int8range(5,10)	                            t               +
+  -|-	is adjacent to	                numrange(1.1,2.2) -|- numrange(2.2,3.3)	                        t               +
+  +	    union	                        numrange(5,15) + numrange(10,20)	                            [5,20)          +
+ '*'    intersection	                int8range(5,15) * int8range(10,20)	                            [10,15)         +
+  -	    difference	                    int8range(5,15) - int8range(10,20)	                            [5,10)          +
  **/
 
 public final class TsRange implements Comparable<TsRange> {
@@ -203,9 +203,9 @@ public final class TsRange implements Comparable<TsRange> {
     }
 
     public boolean containsRange(final TsRange range) {
-       if (range == null) {
-           throw new IllegalArgumentException("range must not be null");
-       }
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
 
         if (!this.isEmpty() && range.isEmpty()) {
             return true;
@@ -273,17 +273,17 @@ public final class TsRange implements Comparable<TsRange> {
     }
 
     public boolean lowerInf() {
-        return this.lower.isEqual(MINUS_INFINITY) || this.lower.isEqual(INFINITY);
+        return this.lower.isEqual(MINUS_INFINITY);
     }
 
     public boolean upperInf() {
-        return this.upper.isEqual(MINUS_INFINITY) || this.upper.isEqual(INFINITY);
+        return this.upper.isEqual(INFINITY);
     }
 
     public boolean notExtendsLeftOf(final TsRange range) {
-       if (range == null) {
-           throw new IllegalArgumentException("range must not be null");
-       }
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
         if (this.isEmpty() || range.isEmpty()) {
             return false;
         }
@@ -300,12 +300,12 @@ public final class TsRange implements Comparable<TsRange> {
             return false;
         }
 
-       final int cmpA = compareDateTime(this.upper(), range.lower());
-       final int cmpB = compareDateTime(this.lower(), range.upper());
+        final int cmpA = compareDateTime(this.upper(), range.lower());
+        final int cmpB = compareDateTime(this.lower(), range.upper());
 
-       if (cmpA == 0) {
-           return cmpB < 0 && ((!this.upperInc() && range.lowerInc()) || (this.upperInc() && !range.lowerInc()));
-       }
+        if (cmpA == 0) {
+            return cmpB < 0 && ((!this.upperInc() && range.lowerInc()) || (this.upperInc() && !range.lowerInc()));
+        }
 
         if (cmpB == 0) {
             return cmpA > 0 && ((!this.lowerInc() && range.upperInc()) || (this.lowerInc() && !range.upperInc()));
@@ -443,13 +443,14 @@ public final class TsRange implements Comparable<TsRange> {
 
         final int cmp = compareDateTime(this.lower(), range.upper());
         if (cmp > 0) {
-           return false;
+            return false;
         } else if (cmp < 0) {
-           return true;
+            return true;
         } else {
             return this.lowerInc() && range.upperInc();
         }
     }
+
     /*
      объединяет два диапазона в один общий минимальный охватывающий диапазон.
      */
@@ -494,9 +495,9 @@ public final class TsRange implements Comparable<TsRange> {
     }
 
     public boolean greaterThan(final TsRange range) {
-         if (range == null) {
-             throw new IllegalArgumentException("range must not be null");
-         }
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
 
         if (this.isEmpty() && range.isEmpty()) {
             return false;
@@ -521,7 +522,7 @@ public final class TsRange implements Comparable<TsRange> {
         return compareLowerEndpoints(this.lower, range.lower, this.lowerInc, range.lowerInc);
     }
 
-    public static int compareLowerEndpoints(final LocalDateTime datetime1,final LocalDateTime datetime2,
+    public static int compareLowerEndpoints(final LocalDateTime datetime1, final LocalDateTime datetime2,
                                             final boolean bound1, final boolean bound2) {
         final int cmp = compareDateTime(datetime1, datetime2);
         if (cmp != 0) {
@@ -592,11 +593,45 @@ public final class TsRange implements Comparable<TsRange> {
         }
         if (o instanceof TsRange range) {
             return this.lower.isEqual(range.lower()) &&
-                this.upper.isEqual(range.upper()) &&
-                this.upperInc == range.upperInc() &&
-                this.lowerInc == range.lowerInc();
+                    this.upper.isEqual(range.upper()) &&
+                    this.upperInc == range.upperInc() &&
+                    this.lowerInc == range.lowerInc();
         }
         return false;
+    }
+
+    /*
+     * anyrange @> anymultirange → boolean
+     * Диапазон содержит мультисписок?
+     * int4range(1,10) @> '{[2,3),[5,6)}'::int4multirange → t
+     */
+    public boolean containsMultirange(final TsMultiRange multirange) {
+        if (multirange == null) {
+            throw new IllegalArgumentException("multirange must not be null");
+        }
+
+        if (multirange.isEmpty()) {
+            return true;
+        }
+
+        if (this.isEmpty()) {
+            return false;
+        }
+
+        return this.containsRange(multirange.getFirst())
+                && this.containsRange(multirange.getLast());
+    }
+
+    /*
+     * anyrange <@ anymultirange → boolean
+     * Диапазон содержится в мультисписке?
+     * int4range(2,4) <@ '{[1,5),[10,15)}'::int4multirange → t
+     */
+    public boolean isContainedBy(final TsMultiRange multirange) {
+        if (multirange == null) {
+            throw new IllegalArgumentException("multirange must not be null");
+        }
+        return multirange.containsRange(this);
     }
 
     @Override
@@ -606,8 +641,15 @@ public final class TsRange implements Comparable<TsRange> {
 
     @Override
     public String toString() {
+        if (this.isEmpty()) {
+            return "empty";
+        }
         final String l = lower.toString();
         final String u = upper.toString();
-        return (lowerInc ? "[" : "(") + "\"" + l + "\""+ "," + "\"" + u + "\""+ (upperInc ? "]" : ")");
+        return (lowerInc ? "[" : "(") +
+                (lowerInf() ? "-infinity" : ("\"" + l + "\"")) +
+                "," +
+                (upperInf() ? "infinity" : ("\"" + u + "\"")) +
+                (upperInc ? "]" : ")");
     }
 }

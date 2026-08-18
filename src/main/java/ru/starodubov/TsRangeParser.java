@@ -1,6 +1,6 @@
 package ru.starodubov;
 
-import java.time.DateTimeException;
+
 import java.time.LocalDateTime;
 
 public class TsRangeParser {
@@ -11,7 +11,7 @@ public class TsRangeParser {
                 "[\"2026-06-07\",\"2026-06-07 09:45:00.789\"]"
                 "[\"2026-06-07\",\"2026-06-07 09:45:00.789134\"]"
 
-          Метод не далает никакких валидаций.
+          Метод не делает никаких валидаций.
           Метод подразумевает что формат корректный.
           Валидацию входного формата прописывать САМОСТОЯТЕЛЬНО.
          */
@@ -19,16 +19,71 @@ public class TsRangeParser {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
         }
-
+        if (range.length() == 5 &&
+                range.charAt(0) == 'e' &&
+                range.charAt(1) == 'm' &&
+                range.charAt(2) == 'p' &&
+                range.charAt(3) == 't' &&
+                range.charAt(4) == 'y'
+        ) {
+            return TsRange.EMPTY;
+        }
         final boolean lowerInc = parseLeftBound(range.charAt(0));
         final boolean upperInc = parseRightBound(range.charAt(range.length() - 1));
 
         final int commaIdx = range.indexOf(',');
 
-        final LocalDateTime lower = parseTimestamp(range, 2, commaIdx - 3);
-        final LocalDateTime upper = parseTimestamp(range, commaIdx + 2, range.length() - commaIdx - 4);
+        final LocalDateTime lower = parseLower(range, commaIdx);
+        final LocalDateTime upper = parseUpper(range, commaIdx);
 
         return TsRange.of(lower, upper, lowerInc, upperInc);
+
+    }
+
+    static LocalDateTime parseUpper(final String range, final int commaIdx) {
+        if (commaIdx == range.length() - 2) {
+            return TsRange.INFINITY;
+        }
+        final int len = range.length() - commaIdx;
+        if (len == 10 &&
+                range.charAt(commaIdx + 1) == 'i' &&
+                range.charAt(commaIdx + 2) == 'n' &&
+                range.charAt(commaIdx + 3) == 'f' &&
+                range.charAt(commaIdx + 4) == 'i' &&
+                range.charAt(commaIdx + 5) == 'n' &&
+                range.charAt(commaIdx + 6) == 'i' &&
+                range.charAt(commaIdx + 7) == 't' &&
+                range.charAt(commaIdx + 8) == 'y'
+        ) {
+            return TsRange.INFINITY;
+        }
+
+        return parseTimestamp(range, commaIdx + 2, range.length() - commaIdx - 4);
+    }
+
+    static LocalDateTime parseLower(final String range, final int commaIdx) {
+        if (commaIdx == 1) {
+            return TsRange.MINUS_INFINITY;
+        }
+
+        //(-infinity,"2020-01-03 00:00:00")
+        if (range.charAt(1) == '-') {
+            final int len = commaIdx - 1;
+            if (len == 9 &&
+                    range.charAt(2) == 'i' &&
+                    range.charAt(3) == 'n' &&
+                    range.charAt(4) == 'f' &&
+                    range.charAt(5) == 'i' &&
+                    range.charAt(6) == 'n' &&
+                    range.charAt(7) == 'i' &&
+                    range.charAt(8) == 't' &&
+                    range.charAt(9) == 'y'
+            ) {
+                return TsRange.MINUS_INFINITY;
+            }
+        }
+
+        return parseTimestamp(range, 2, commaIdx - 3);
     }
 
     static boolean parseLeftBound(final char bound) {
@@ -53,11 +108,10 @@ public class TsRangeParser {
      * "2020-01-01 10:10:10.1"
      * ...
      * "2020-01-01 10:10:10.123456"
-     *
+     * <p>
      * Также понимает формат без дробной части:
      * "2020-01-01 10:10:10"
      * "2020-01-01
-     *
      */
     static LocalDateTime parseTimestamp(final String timestamp, final int offset, final int len) {
         if (timestamp == null) {

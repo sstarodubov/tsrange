@@ -9,6 +9,7 @@ import java.util.*;
 public final class TsMultiRange implements Iterable<TsRange> {
 
     private final List<TsRange> ranges;
+    public static final TsMultiRange EMPTY = new TsMultiRange(Collections.emptyList());
 
     private TsMultiRange(final List<TsRange> ranges) {
         this.ranges = ranges;
@@ -18,7 +19,10 @@ public final class TsMultiRange implements Iterable<TsRange> {
         if (range == null) {
             throw new IllegalArgumentException("range must not be null");
         }
-        return new TsMultiRange(normalize(List.of(range)));
+        if (range.isEmpty()) {
+            return EMPTY;
+        }
+        return new TsMultiRange(List.of(range));
     }
 
     public static TsMultiRange of(final List<TsRange> ranges) {
@@ -26,6 +30,314 @@ public final class TsMultiRange implements Iterable<TsRange> {
             throw new IllegalArgumentException("ranges must not be null");
         }
         return new TsMultiRange(normalize(ranges));
+    }
+
+
+    /*
+        anymultirange * anymultirange → anymultirange
+        Вычисляет пересечение мультидиапазонов.
+        '{[5,15)}'::int8multirange * '{[10,20)}'::int8multirange → {[10,15)}
+     */
+    public TsMultiRange intersection(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return TsMultiRange.of(List.of());
+        }
+
+        final List<TsRange> result = new ArrayList<>();
+
+        int i = 0, j = 0;
+        TsRange r1, r2;
+        while (i < this.size() && j < other.size()) {
+            r1 = this.get(i);
+            r2 = other.get(j);
+
+            final TsRange inter = r1.intersection(r2);
+            if (!inter.isEmpty()) {
+                result.add(inter);
+            }
+
+            if (r1.compareUpper(r2) < 0) {
+                i++;
+            } else {
+                j++;
+            }
+        }
+
+        return new TsMultiRange(result);
+    }
+
+    /*
+    anymultirange + anymultirange → anymultirange
+    Вычисляет объединение мультидиапазонов. Мультидиапазоны могут не пересекаться и не примыкать друг к другу.
+    '{[5,10)}'::nummultirange + '{[15,20)}'::nummultirange → {[5,10), [15,20)}
+     */
+
+    public TsMultiRange union(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("range is null");
+        }
+
+        if (this.isEmpty()) {
+            return other;
+        }
+
+        if (other.isEmpty()) {
+            return this;
+        }
+
+        final var arr = new ArrayList<TsRange>(other.size() + this.size());
+        arr.addAll(other.ranges);
+        arr.addAll(this.ranges);
+        Collections.sort(arr);
+        normalizeNoCopy(arr);
+        return new TsMultiRange(arr);
+    }
+
+    /*
+       anymultirange < anymultirange → boolean
+        */
+    public boolean lessThan(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        final boolean thisEmpty = this.isEmpty();
+        final boolean otherEmpty = other.isEmpty();
+
+        if (thisEmpty && otherEmpty) {
+            return false;
+        }
+
+        if (thisEmpty) {
+            return true;
+        }
+
+        if (otherEmpty) {
+            return false;
+        }
+
+        final int minSize = Math.min(this.size(), other.size());
+        TsRange r1, r2;
+        for (int i = 0; i < minSize; i++) {
+            r1 = this.get(i);
+            r2 = other.get(i);
+
+            if (r1.lessThan(r2)) {
+                return true;
+            }
+            if (r2.lessThan(r1)) {
+                return false;
+            }
+            // Если равны, продолжаем сравнивать следующие
+        }
+
+        return this.size() < other.size();
+    }
+
+    /*
+       anymultirange > anymultirange → boolean
+    */
+    public boolean greaterThan(final TsMultiRange other) {
+        return other.lessThan(this);
+    }
+
+    /*
+           anymultirange <= anymultirange → boolean
+        */
+    public boolean lessThanOrEqual(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+        return !other.lessThan(this);
+    }
+
+    /*
+           anymultirange >= anymultirange → boolean
+        */
+    public boolean greaterThanOrEqual(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+        return !this.lessThan(other);
+    }
+
+    /*
+       anymultirange = anymultirange → boolean
+    */
+    public boolean isEqual(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty() && other.isEmpty()) {
+            return true;
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return false;
+        }
+
+        if (this.size() != other.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < this.size(); i++) {
+            if (!this.get(i).isEqual(other.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /*
+    anymultirange -|- anymultirange → boolean
+     Мультидиапазоны примыкают друг к другу?
+     '{[1.1,2.2)}'::nummultirange -|- '{[2.2,3.3)}'::nummultirange → t
+     */
+    public boolean isAdjacentTo(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return false;
+        }
+        final TsRange m1 = this.merge();
+        final TsRange m2 = other.merge();
+        return m1.isAdjacentTo(m2);
+    }
+
+    /*
+    anymultirange >> anymultirange → boolean
+    Первый мультидиапазон располагается строго справа от второго?
+    {[50,60)}'::int8multirange >> '{[20,30)}'::int8multirange → t
+
+     */
+    public boolean strictlyRightOf(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return false;
+        }
+
+        return other.strictlyLeftOf(this);
+    }
+
+    /*
+        anymultirange << anymultirange → boolean
+        Первый мультидиапазон располагается строго слева от второго?
+        '{[1,10)}'::int8multirange << '{[100,110)}'::int8multirange → t
+     */
+    public boolean strictlyLeftOf(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return false;
+        }
+
+        final TsRange lastOfThis = this.getLast();
+        final TsRange firstOfOther = other.getFirst();
+
+        return lastOfThis.strictlyLeftOf(firstOfOther);
+    }
+
+
+    /*
+    anymultirange && anymultirange → boolean
+    Мультидиапазоны пересекаются (у них есть общие элементы)?
+    '{[3,7)}'::int8multirange && '{[4,12)}'::int8multirange → t
+     */
+    public boolean overlaps(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+
+        if (this.isEmpty() || other.isEmpty()) {
+            return false;
+        }
+
+        int curIdx = 0;
+        int otherIdx = 0;
+
+        while (curIdx < this.size() && otherIdx < other.size()) {
+
+            if (this.get(curIdx).overlaps(other.get(otherIdx))) {
+                return true;
+            }
+
+            if (this.get(curIdx).lessThan(other.get(otherIdx))) {
+                curIdx++;
+            } else {
+                otherIdx++;
+            }
+        }
+
+
+        return false;
+    }
+
+    /*
+    anymultirange <@ anyrange → boolean
+    Мультидиапазон содержится в диапазоне?
+    '{[2,4)}'::int4multirange <@ int4range(1,7) → t
+     */
+    public boolean isContainedBy(final TsRange range) {
+        if (range == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
+        return range.containsMultirange(this);
+    }
+
+    /*
+     * anymultirange <@ anymultirange → boolean
+     * Первый мультисписок содержится во втором?
+     * '{[2,3)}'::int4multirange <@ '{[2,4),[5,7)}'::int4multirange → t
+     */
+    public boolean isContainedBy(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+        return other.containsMultirange(this);
+    }
+
+    /*
+    anymultirange @> anyelement → boolean
+    Мультидиапазон содержит заданный элемент?
+    '{[2011-01-01,2011-03-01)}'::tsmultirange @> '2011-01-10'::timestamp → t
+     */
+
+    public boolean containsElement(final LocalDateTime dateTime) {
+        if (dateTime == null) {
+            throw new IllegalArgumentException("dateTime must not be null");
+        }
+        if (this.isEmpty()) {
+            return false;
+        }
+
+        int mid, left = 0, right = this.ranges.size() - 1;
+        TsRange r;
+        while (left <= right) {
+            mid = (left + right) >>> 1;
+            r = this.ranges.get(mid);
+            if (r.containsElement(dateTime)) {
+                return true;
+            }
+
+            int cmp = TsRange.compareDateTime(dateTime, r.lower());
+            if (cmp < 0 || (cmp == 0 && !r.lowerInc())) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return false;
     }
 
     /*
@@ -46,7 +358,6 @@ public final class TsMultiRange implements Iterable<TsRange> {
             return false;
         }
 
-        // Бинарный поиск: ищем элемент, который может содержать range
         int lo = 0;
         int hi = this.size() - 1;
         int mid;
@@ -60,10 +371,8 @@ public final class TsMultiRange implements Iterable<TsRange> {
             }
 
             if (element.lessThan(range)) {
-                // Элемент "левее" range, ищем правее
                 lo = mid + 1;
             } else {
-                // Элемент "правее" или равен, ищем левее
                 hi = mid - 1;
             }
         }
@@ -76,11 +385,10 @@ public final class TsMultiRange implements Iterable<TsRange> {
     Первый мультидиапазон содержит второй?
             '{[2,4)}'::int4multirange @> '{[2,3)}'::int4multirange → t
      */
-
     public boolean containsMultirange(final TsMultiRange mrange) {
-       if (mrange == null) {
-           throw new IllegalArgumentException("range must not be null");
-       }
+        if (mrange == null) {
+            throw new IllegalArgumentException("range must not be null");
+        }
 
         if (mrange.isEmpty()) {
             return true;
@@ -129,6 +437,83 @@ public final class TsMultiRange implements Iterable<TsRange> {
         return TsRange.of(this.getFirst().lower(), this.getLast().upper(),
                 this.getFirst().lowerInc(), this.getLast().upperInc());
     }
+
+    /*
+    anymultirange - anymultirange → anymultirange
+    Вычисляет разность мультидиапазонов.
+    '{[5,20)}'::int8multirange - '{[10,15)}'::int8multirange → {[5,10), [15,20)}
+     */
+    public TsMultiRange difference(final TsMultiRange other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other must not be null");
+        }
+
+        if (this.isEmpty()) {
+            return this;
+        }
+        if (other.isEmpty()) {
+            return this;
+        }
+
+        final List<TsRange> result = new ArrayList<>();
+        int j = 0; // указатель на other.ranges
+
+        for (int i = 0; i < this.size(); i++) {
+            TsRange current = this.get(i);
+
+            List<TsRange> pieces = new ArrayList<>();
+            pieces.add(current);
+
+            while (j < other.size() && other.get(j).strictlyLeftOf(current)) {
+                j++;
+            }
+
+            int k = j;
+            while (k < other.size() && !other.get(k).strictlyRightOf(current)) {
+                final TsRange b = other.get(k);
+
+                final List<TsRange> nextPieces = new ArrayList<>();
+                for (TsRange piece : pieces) {
+                    nextPieces.addAll(subtractSingle(piece, b));
+                }
+                pieces = nextPieces;
+                k++;
+            }
+
+            result.addAll(pieces);
+        }
+
+        return new TsMultiRange(result);
+    }
+
+    /**
+     * Вычитает диапазон b из диапазона a.
+     * Возвращает список из 0, 1 или 2 диапазонов.
+     */
+    private List<TsRange> subtractSingle(TsRange a, TsRange b) {
+        if (!a.overlaps(b)) {
+            return List.of(a);
+        }
+
+        if (b.containsRange(a)) {
+            return Collections.emptyList();
+        }
+
+        List<TsRange> res = new ArrayList<>(2);
+
+        // a начинается левее b
+        if (a.compareLower(b) < 0) {
+            res.add(TsRange.of(a.lower(), b.lower(), a.lowerInc(), !b.lowerInc()));
+        }
+
+        // a заканчивается правее b
+        if (a.compareUpper(b) > 0) {
+            res.add(TsRange.of(b.upper(), a.upper(), !b.upperInc(), a.upperInc()));
+        }
+
+        return res;
+    }
+
     /*
     PostgreSQL хранит мультисписки в каноническом (нормализованном) виде.
     Это означает, что при создании или изменении tsmultirange СУБД автоматически применяет три правила:
@@ -140,9 +525,18 @@ public final class TsMultiRange implements Iterable<TsRange> {
 
     private static List<TsRange> normalize(final List<TsRange> ranges) {
         final var normList = copyAndSort(ranges);
+        normalizeNoCopy(normList);
+        return Collections.unmodifiableList(normList);
+    }
+
+    /**
+     *  Схлопывает и удаляет пустые диапазоны
+     * @param normList - отсортированный массив с диапазонами
+     */
+    private static void normalizeNoCopy(final List<TsRange> normList) {
         TsRange last, cur;
         int wrIdx = 0; // индекс записи
-        for (int readIdx = 0; readIdx <  normList.size(); readIdx++) {
+        for (int readIdx = 0; readIdx < normList.size(); readIdx++) {
             cur = normList.get(readIdx);
             if (cur.isEmpty()) {
                 continue;
@@ -155,7 +549,7 @@ public final class TsMultiRange implements Iterable<TsRange> {
                 last = normList.get(wrIdx - 1);
                 if (last.overlaps(cur) || last.isAdjacentTo(cur)) {
                     wrIdx--; // удалили последний элемент
-                    normList.set(wrIdx, last.merge(cur)); // на его место зависали смерженный отрезок
+                    normList.set(wrIdx, last.merge(cur)); // на его место записали смерженный отрезок
                 } else {
                     normList.set(wrIdx, cur);
                 }
@@ -163,9 +557,7 @@ public final class TsMultiRange implements Iterable<TsRange> {
             }
         }
 
-        shrink(normList, wrIdx); //выравнимаем размер массива по индексу записи
-
-        return Collections.unmodifiableList(normList);
+        shrink(normList, wrIdx); //выравниваем размер массива по индексу записи
     }
 
     public boolean isEmpty() {
@@ -174,9 +566,7 @@ public final class TsMultiRange implements Iterable<TsRange> {
 
     static List<TsRange> copyAndSort(final List<TsRange> ranges) {
         final var result = new ArrayList<TsRange>(ranges.size());
-        for (var r : ranges) {
-            result.add(r);
-        }
+        result.addAll(ranges);
         Collections.sort(result);
         return result;
     }
